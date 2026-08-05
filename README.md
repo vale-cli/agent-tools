@@ -7,10 +7,46 @@ Everything here drives [Vale](https://vale.sh), the prose linter. The skills run
 the CLI in your repository — they edit your files and open your pull requests,
 and they need no account.
 
+## Install
+
+In Claude Code, type these two as slash commands (the second one restarts the
+session so the hook and the MCP server register):
+
 ```
 /plugin marketplace add vale-cli/agent-tools
 /plugin install vale@agent-tools
 ```
+
+You also need the `vale` binary on your `PATH`
+([installation](https://docs.vale.sh/topics/installation)) — the plugin drives
+it, it doesn't bundle it. `jq` too, if you want the hook.
+
+### Check it worked
+
+Three separate things install, and they're verified three different ways.
+
+**The skills.** Type `/vale:` and five completions should appear — `setup`,
+`fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
+
+**The hook.** This is the one that surprises people: it runs on *Claude's*
+edits, not yours. Editing a file in your own editor does nothing. To see it,
+ask Claude to change a prose file in a repository that has a working Vale
+config, and watch it get pulled up on any error-level alert before it moves on.
+
+If nothing happens, that is often correct — the hook is silent unless a file
+Vale lints has an **error**. Warnings and suggestions never appear. Check the
+setup by hand first:
+
+```bash
+vale ls-config >/dev/null && echo "config resolves"
+vale --no-exit --output=line path/to/file.md   # any `error` lines?
+```
+
+No errors there means nothing for the hook to say.
+
+**The MCP server.** Run `/mcp` and look for `vale-cms`. Ask Claude to scaffold a
+Vale rule and it should call a tool. Without a subscription every call returns a
+401 naming Vale CMS — that is the server working, not a broken install.
 
 ## The skills
 
@@ -31,10 +67,10 @@ than improvising around it.
 
 ## The hook
 
-`hooks/vale-edit.sh` runs after every `Edit` and `Write`. If the file is prose
-and the repository has a resolvable Vale config, it lints that one file and
-hands any **error-level** alerts back to the assistant to fix before it moves
-on.
+`hooks/vale-edit.sh` runs every time **the assistant** writes or edits a file —
+not when you do. If that file is prose and the repository has a resolvable Vale
+config, it lints that one file and hands any **error-level** alerts straight
+back for fixing, in the same turn.
 
 It is silent in every other case — no Vale binary, no `jq`, no config, a file
 Vale doesn't lint, or a clean run. Warnings and suggestions are never surfaced;
