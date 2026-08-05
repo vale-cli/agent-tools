@@ -1,0 +1,18 @@
+{
+  "name": "agent-tools",
+  "owner": {
+    "name": "Joseph Kato",
+    "url": "https://vale.sh"
+  },
+  "metadata": {
+    "description": "Agent tooling for Vale, the prose linter.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "vale",
+      "source": "./",
+      "description": "Set up Vale, fix its alerts, triage a first run, and keep prose linted as you edit."
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# Shell scripts must keep LF endings on every platform. Git for Windows defaults
+# to core.autocrlf=true, which would rewrite these on checkout — and a CRLF in
+# the shebang makes the script fail with "bad interpreter: /bin/sh^M" rather
+# than anything that points at the cause.
+*.sh text eol=lf
+
+# JSON manifests are read by tooling, not shells, but there is no reason for
+# them to differ per platform either.
+*.json text eol=lf
+*.md text eol=lf

@@ -1,0 +1,13 @@
+{
+  "name": "vale",
+  "description": "Set up Vale, fix its alerts, triage a first run, and keep prose linted as you edit.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Joseph Kato",
+    "url": "https://vale.sh"
+  },
+  "homepage": "https://vale.sh/skills",
+  "repository": "https://github.com/vale-cli/agent-tools",
+  "license": "MIT",
+  "keywords": ["vale", "prose", "linting", "documentation", "style-guide"]
+}
