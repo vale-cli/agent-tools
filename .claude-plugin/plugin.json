@@ -9,5 +9,19 @@
   "homepage": "https://vale.sh/skills",
   "repository": "https://github.com/vale-cli/agent-tools",
   "license": "MIT",
-  "keywords": ["vale", "prose", "linting", "documentation", "style-guide"]
+  "keywords": [
+    "vale",
+    "prose",
+    "linting",
+    "documentation",
+    "style-guide"
+  ],
+  "userConfig": {
+    "level": {
+      "type": "string",
+      "title": "Alert level the edit hook reports",
+      "description": "Lowest severity handed back to Claude after it edits a prose file: \"error\", \"warning\", or \"suggestion\". Errors only by default, because warnings and suggestions are advisory by the project's own choice. Widen it for a style whose rules are deliberately advisory. An unrecognised value is treated as \"error\".",
+      "default": "error"
+    }
+  }
 }

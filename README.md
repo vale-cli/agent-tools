@@ -69,13 +69,44 @@ than improvising around it.
 
 `hooks/vale-edit.sh` runs every time **the assistant** writes or edits a file —
 not when you do. If that file is prose and the repository has a resolvable Vale
-config, it lints that one file and hands any **error-level** alerts straight
-back for fixing, in the same turn.
+config, it lints that one file and hands the alerts straight back for fixing,
+in the same turn.
 
 It is silent in every other case — no Vale binary, no `jq`, no config, a file
-Vale doesn't lint, or a clean run. Warnings and suggestions are never surfaced;
-they're advisory by the project's own choice, and reporting them on every edit
-is how people end up turning a linter off.
+Vale doesn't lint, or a clean run.
+
+### Which alerts reach Claude
+
+By default, **errors only**. Warnings and suggestions are advisory by the
+project's own choice, and reporting them on every edit is how people end up
+turning a linter off.
+
+Some styles are deliberately advisory, though, and against those the default
+leaves the hook quiet. Run `/plugin` and set **Alert level the edit hook
+reports**:
+
+| Value | Relays |
+|---|---|
+| `error` (default) | errors |
+| `warning` | errors and warnings |
+| `suggestion` | everything |
+
+Anything else is treated as `error` — the plugin config is free text, so a typo
+falls back rather than turning the hook into an error on every edit.
+
+To override it for one shell or outside the plugin, set `VALE_HOOK_LEVEL`,
+which wins over the plugin setting:
+
+```bash
+VALE_HOOK_LEVEL=warning claude
+```
+
+Two gates apply, in order: Vale's own `MinAlertLevel` decides what appears in
+the output at all, and this decides what reaches Claude. Raising the level past
+`MinAlertLevel` gains nothing.
+
+Above `error`, each line carries its severity and the closing instruction
+changes to match — the errors get fixed, the rest is passed along as advice.
 
 ## The MCP server
 
