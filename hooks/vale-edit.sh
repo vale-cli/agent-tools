@@ -12,19 +12,30 @@
 # linter off. Widen it for a style whose rules are deliberately advisory, where
 # the default would leave the hook silent.
 #
-# POSIX sh, not bash: the only bashism was `set -o pipefail`, which dash rejects
-# outright and which nothing here needs — the one pipeline feeds a variable that
-# is checked for emptiness two lines later. Staying POSIX means the hook runs
-# under whatever /bin/sh a machine has, including minimal containers.
+# POSIX sh and POSIX tools only. This is the always-on component, so it
+# depends on nothing optional: Vale renders alerts through the template
+# shipped beside this script, sed pulls the file path out of the payload, and
+# awk does the filtering and the JSON escaping. The `fix` skill still uses
+# jq, where a missing binary fails visibly instead of silently.
 set -u
 
-# jq parses the hook payload and Vale's JSON; the `fix` skill already needs it.
-for bin in vale jq; do
-	command -v "$bin" >/dev/null 2>&1 || exit 0
-done
+command -v vale >/dev/null 2>&1 || exit 0
 
 payload=$(cat)
-file=$(printf '%s' "$payload" | jq -r '.tool_input.file_path // empty')
+
+# The one field this hook needs from the payload. The pattern stops at a
+# quote, so a name containing one -- which JSON must escape -- doesn't
+# match and the edit is skipped: pathological names are lost, never
+# mangled. A Windows path arrives with doubled backslashes; they become
+# forward slashes, which Git Bash and Vale both accept, and which is the
+# normalization the hooks documentation itself shows.
+file=$(printf '%s\n' "$payload" |
+	sed -n 's/.*"file_path"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' |
+	head -n 1 |
+	sed 's/\\\\/\//g; s/\\\//\//g')
+case "$file" in
+*\\*) exit 0 ;;
+esac
 [ -n "$file" ] && [ -f "$file" ] || exit 0
 
 case "$file" in
@@ -45,42 +56,111 @@ esac
 # someone's settings should not turn the hook into an error on every edit.
 level=${VALE_HOOK_LEVEL:-${CLAUDE_PLUGIN_OPTION_LEVEL:-error}}
 case "$level" in
-warning) keep='["error","warning"]' ;;
-suggestion) keep='["error","warning","suggestion"]' ;;
+warning) keep='^(error|warning)$' ;;
+suggestion) keep='^(error|warning|suggestion)$' ;;
 *)
 	level=error
-	keep='["error"]'
+	keep='^error$'
 	;;
 esac
 
-# No resolvable config means this repository hasn't adopted Vale. Nothing to say.
-vale ls-config >/dev/null 2>&1 || exit 0
+# Anchor at the file's own configuration, not the session's working
+# directory. The hook receives an absolute path and may run from anywhere:
+# linted as-is, a path-scoped section like `[docs/**/*.md]` never matches,
+# and Vale resolves whichever .vale.ini the *session* sits under -- both
+# quietly, as a clean pass. Walking up from the file finds the config the
+# file actually belongs to; Vale then runs from there, on the path relative
+# to there, which is the form path-scoped sections are written against.
+# The walk stops when dirname stops making progress rather than at "/",
+# because not every tree tops out there: a Windows drive root under Git
+# Bash is its own fixed point.
+root=$(dirname "$file")
+adopted=1
+prev=''
+while [ "$root" != "$prev" ] && [ ! -f "$root/.vale.ini" ] && [ ! -f "$root/_vale.ini" ]; do
+	prev=$root
+	root=$(dirname "$root")
+done
+if [ ! -f "$root/.vale.ini" ] && [ ! -f "$root/_vale.ini" ]; then
+	adopted=0
+	root=$(dirname "$file")
+fi
+rel=${file#"$root"/}
+
+# No config above the file and none resolvable from its directory means this
+# repository hasn't adopted Vale: nothing to say. A config the walk *did*
+# find counts as adoption even when it fails to load -- `ls-config` exits
+# nonzero for both, and a broken config deserves the report below, not the
+# silence of a repository that never opted in.
+if [ "$adopted" -eq 0 ]; then
+	(cd "$root" && vale ls-config >/dev/null 2>&1) || exit 0
+fi
+
+# emit wraps a message in the hook's JSON envelope, escaping it with awk:
+# backslashes first, then quotes and tabs, and real newlines become \n as the
+# lines are joined. Alert messages quote the text they matched, so every one
+# of these appears in practice.
+emit() {
+	printf '%s' "$1" | awk '
+		BEGIN { printf "{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"" }
+		{
+			gsub(/\\/, "\\\\")
+			gsub(/"/, "\\\"")
+			gsub(/\t/, "\\t")
+			gsub(/\r/, "")
+			printf "%s%s", (NR > 1 ? "\\n" : ""), $0
+		}
+		END { print "\"}}" }
+	'
+}
+
+# The template renders one alert per line -- severity, line, check, message,
+# tab-separated -- so the parsing below and the format are shipped together.
+tmpl=$(dirname "$0")/vale-hook.tmpl
+[ -f "$tmpl" ] || exit 0
 
 # --no-exit because error-level alerts are the case we want to report, and
-# without it Vale's nonzero exit would look like a failed run.
-alerts=$(vale --no-exit --output=JSON "$file" 2>/dev/null) || exit 0
+# without it Vale's nonzero exit would look like a failed run. A failure
+# here is a configuration Vale could not load -- in a repository that has
+# one -- and saying so beats silence that reads as a clean pass. Stderr goes
+# to its own file so a successful run's output stays unmixed.
+err=$(mktemp "${TMPDIR:-/tmp}/vale-edit.XXXXXX") || exit 0
+if ! alerts=$(cd "$root" && vale --no-exit --output="$tmpl" "$rel" 2>"$err"); then
+	# The error's shape: a code line, a styled config excerpt, the message,
+	# and an "Execution stopped" trailer. The code and the message are the
+	# two lines worth relaying; the excerpt's ANSI styling is stripped.
+	esc=$(printf '\033')
+	code=$(head -n 1 "$err" | cut -d ' ' -f 1)
+	why=$(sed "s/$esc\[[0-9;]*m//g" "$err" |
+		grep -v '^[[:space:]]*$' |
+		grep -v '^Execution stopped' |
+		tail -n 1)
+	rm -f "$err"
+	emit "Vale could not check this file: ${code:-error}: ${why:-unknown error}"
+	exit 0
+fi
+rm -f "$err"
 
-# Vale's own MinAlertLevel gates what appears in the JSON at all; this is the
-# second gate, over whatever survived the first.
-summary=$(printf '%s' "$alerts" | jq -r --argjson keep "$keep" --arg level "$level" '
-  [ .[][]? | select(.Severity as $s | $keep | index($s)) ]
-  | if length == 0 then empty
-    else "Vale reports \(length) alert(s) at \($level) level or above in this file:\n"
-       + ([ .[] | "  line \(.Line): \(.Check) [\(.Severity)] — \(.Message)" ] | join("\n"))
-       + "\n\n"
-       + (if $level == "error"
-          then "Fix these before moving on, preserving the markup exactly."
-          else "Fix the errors before moving on, preserving the markup exactly; treat the rest as advice."
-          end)
-       + " Do not disable a rule to clear one."
-    end
+# Vale's own MinAlertLevel gates what appears in the output at all; this is
+# the second gate, over whatever survived the first. A message may itself
+# contain tabs, so fields past the third are rejoined.
+lines=$(printf '%s\n' "$alerts" | awk -F '\t' -v keep="$keep" '
+	NF >= 4 && $1 ~ keep {
+		msg = $4
+		for (i = 5; i <= NF; i++) msg = msg FS $i
+		printf "  line %s: %s [%s] — %s\n", $2, $3, $1, msg
+	}
 ')
+[ -n "$lines" ] || exit 0
 
-[ -n "$summary" ] || exit 0
+count=$(printf '%s\n' "$lines" | grep -c .)
+if [ "$level" = "error" ]; then
+	advice="Fix these before moving on, preserving the markup exactly."
+else
+	advice="Fix the errors before moving on, preserving the markup exactly; treat the rest as advice."
+fi
 
-jq -n --arg ctx "$summary" '{
-  hookSpecificOutput: {
-    hookEventName: "PostToolUse",
-    additionalContext: $ctx
-  }
-}'
+emit "Vale reports $count alert(s) at $level level or above in this file:
+$lines
+
+$advice Do not disable a rule to clear one."
