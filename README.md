@@ -25,8 +25,9 @@ it, it doesn't bundle it. `jq` too, if you want the hook.
 
 Three separate things install, and they're verified three different ways.
 
-**The skills.** Type `/vale:` and seven completions should appear —
-`onboard`, `setup`, `tune`, `fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
+**The skills.** Type `/vale:` and nine completions should appear —
+`onboard`, `setup`, `tune`, `from-guide`, `write-guide`, `fix`, `triage`,
+`vocab`, `ci`. That's the whole check; they're just prompts.
 
 **The hook.** This is the one that surprises people: it runs on *Claude's*
 edits, not yours. Editing a file in your own editor does nothing. To see it,
@@ -58,6 +59,8 @@ the task fits — or call them directly.
 | `/vale:onboard` | "set up vale end to end" | Previews the whole baseline in a temp directory — package, vocabulary, a decision per noisy rule, CI — shows it with before/after counts, and applies it on one yes. |
 | `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. |
 | `/vale:tune` | "use title case headings" | Changes one style choice in plain words — headings, contractions, "we", preferred terms — and writes it into the config with its reason. Ships tested templates for the choices no package covers. |
+| `/vale:from-guide` | "enforce our style guide" | Turns a written style guide into the project's own rules, each linked to its section and tested against the guide's own do and don't examples. Says which statements cannot be checked. |
+| `/vale:write-guide` | "document our vale rules" | Writes a readable style guide from the config — what blocks, the style choices and why, the vocabulary — in Markdown, AsciiDoc or reStructuredText. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
 | `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. |
@@ -155,10 +158,13 @@ repository sits across both:
 | **Hook** | the `vale` CLI, on your machine | no |
 | **MCP server** | Vale CMS, at `api.vale.sh` | yes |
 
-The skills and the hook **consume** styles — they run rules that already exist
-and act on the alerts. The one exception is `tune`, which ships three fixed,
-tested templates for choices no package covers. The MCP server **authors and verifies** them. That is why
-it is the paid piece: running a linter is Vale's job and it is free, while
+The hook and most of the skills **consume** styles — they run rules that
+already exist and act on the alerts. `tune` and `from-guide` also write rules,
+and check them the way anyone can: with `vale test`, against cases kept beside
+the rule. The MCP server goes further than a pass or fail — diagnosing why a
+pattern does not match, stress-testing for false positives the cases miss,
+diffing a change against a rule already in use. That is why it is the paid
+piece: running and testing a linter is Vale's job and it is free, while
 handing an assistant a live engine to check its own work against is what Vale
 CMS is.
 

@@ -1,0 +1,19 @@
+# Guide: Headings
+extends: existence
+message: "Don't end a heading with '%s'."
+link: style-guide.md#headings
+level: warning
+scope: heading
+nonword: true
+raw:
+  - '[.:]$'
+tests:
+  - name: the guide's "don't" example is flagged
+    input: '## Install the agent.'
+    contains: "Don't end a heading with '.'."
+  - name: the guide's "do" example passes
+    input: '## Install the agent'
+    want: ''
+  - name: a sentence ending in a period is not a heading
+    input: Install the agent.
+    want: ''

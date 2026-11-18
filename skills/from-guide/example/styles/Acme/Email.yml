@@ -1,0 +1,15 @@
+# Guide: Words > Email
+extends: substitution
+message: "Use '%s' instead of '%s'."
+link: style-guide.md#email
+level: warning
+ignorecase: true
+swap:
+  'e-mail': email
+tests:
+  - name: the hyphenated form is flagged
+    input: Send us an e-mail.
+    contains: "Use 'email' instead of 'e-mail'."
+  - name: the preferred form passes
+    input: Send us an email.
+    want: ''

@@ -1,0 +1,19 @@
+# Guide: Words > Sign in
+extends: substitution
+message: "Use '%s' instead of '%s'."
+link: style-guide.md#sign-in
+level: warning
+ignorecase: true
+swap:
+  'log in|log on': sign in
+  'login': sign-in
+tests:
+  - name: the guide's "don't" example is flagged
+    input: Log in to your account.
+    contains: "Use 'sign in' instead of 'Log in'."
+  - name: the guide's "do" example passes
+    input: Sign in to your account.
+    want: ''
+  - name: the noun form is flagged too
+    input: Open the login page.
+    contains: "'sign-in'"
