@@ -1,0 +1,36 @@
+# For projects that write without contractions. Use instead of the package's
+# rule, which asks for the opposite: set Microsoft.Contractions = NO (or
+# Google.Contractions = NO) alongside this.
+extends: substitution
+message: "Use '%s' instead of '%s'."
+level: suggestion
+ignorecase: true
+swap:
+  "aren't": are not
+  "can't": cannot
+  "couldn't": could not
+  "didn't": did not
+  "doesn't": does not
+  "don't": do not
+  "hasn't": has not
+  "haven't": have not
+  "isn't": is not
+  "it's": it is
+  "shouldn't": should not
+  "that's": that is
+  "there's": there is
+  "wasn't": was not
+  "we're": we are
+  "we've": we have
+  "weren't": were not
+  "won't": will not
+  "wouldn't": would not
+  "you're": you are
+  "you've": you have
+tests:
+  - name: flags a contraction
+    input: This doesn't work yet.
+    contains: "Use 'does not' instead of 'doesn't'."
+  - name: accepts the long form
+    input: This does not work yet.
+    want: ''

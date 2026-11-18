@@ -1,0 +1,24 @@
+# Spell check against one regional dictionary, so the other region's
+# spellings are flagged. Vale's built-in rule accepts both "color" and
+# "colour"; this one does not.
+#
+# Needs the dictionary's .dic and .aff files in
+# <StylesPath>/config/dictionaries -- the vocab skill's dictionary.sh fetches
+# them -- and `Vale.Spelling = NO` in .vale.ini, or every typo is reported
+# twice. The project vocabulary still applies.
+#
+# A regional dictionary is a general one. It will not know "plugin" or
+# "config" as the built-in dictionary does, so expect to add to the
+# vocabulary after switching.
+extends: spelling
+message: "Did you really mean '%s'?"
+level: error
+dictionaries:
+  - en_GB
+tests:
+  - name: the other region's spelling is flagged
+    input: The color is wrong.
+    contains: "'color'"
+  - name: this region's spelling passes
+    input: The colour is right.
+    want: ''

@@ -63,8 +63,11 @@ git switch -c vale-fix-<file-stem>-<short-hash>
 ```
 
 **4. Apply the fix the rule intends.** Each alert carries `Check`, `Message`,
-`Line`, `Span`, and often `Action.Name` with `Action.Params` — the replacement
-the rule itself defines. Prefer that over inventing wording from the message.
+`Line`, `Span`, `Match`, and often `Suggestions` — the replacement text, already
+worked out by Vale from the rule's own fix. Use the first suggestion in place
+of `Match` when there is one; `Action` beside it is the recipe it came from.
+Prefer that over inventing wording from the message. Spelling suggestions are
+guesses, not fixes: read them, do not apply them blindly.
 
 Preserve the markup exactly: AsciiDoc attributes, MDX expressions, reference
 links, code fences, existing line breaks. Never reflow a paragraph to fix one

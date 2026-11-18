@@ -4,6 +4,15 @@
 # than anything that points at the cause.
 *.sh text eol=lf
 
+# The templates the shell scripts hand to Vale are parsed line by line, and
+# rule files are copied into users' repositories: both stay LF as well.
+*.tmpl text eol=lf
+*.yml text eol=lf
+
+# PowerShell reads either, but Windows users open it in editors that expect
+# CRLF.
+*.ps1 text eol=crlf
+
 # JSON manifests are read by tooling, not shells, but there is no reason for
 # them to differ per platform either.
 *.json text eol=lf

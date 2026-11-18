@@ -1,7 +1,7 @@
 {
   "name": "vale",
-  "description": "Set up Vale, fix its alerts, triage a first run, and keep prose linted as you edit.",
-  "version": "0.1.0",
+  "description": "Onboard a repository to Vale in one prompt, tune its style choices, turn a style guide into tested rules, and keep prose linted as you edit.",
+  "version": "0.2.0",
   "author": {
     "name": "Joseph Kato",
     "url": "https://vale.sh"
@@ -20,8 +20,13 @@
     "level": {
       "type": "string",
       "title": "Alert level the edit hook reports",
-      "description": "Lowest severity handed back to Claude after it edits a prose file: \"error\", \"warning\", or \"suggestion\". Errors only by default, because warnings and suggestions are advisory by the project's own choice. Widen it for a style whose rules are deliberately advisory. An unrecognised value is treated as \"error\".",
-      "default": "error"
+      "description": "Lowest severity handed back to Claude after it edits a file Vale lints. Errors only by default, because warnings and suggestions are advisory by the project's own choice. Widen it for a style whose rules are deliberately advisory.",
+      "default": "error",
+      "options": [
+        "error",
+        "warning",
+        "suggestion"
+      ]
     }
   }
 }

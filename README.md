@@ -7,6 +7,37 @@ Everything here drives [Vale](https://vale.sh), the prose linter. The skills run
 the CLI in your repository — they edit your files and open your pull requests,
 and they need no account.
 
+## Set up in one prompt
+
+With the plugin installed, in a repository that has prose and no Vale yet:
+
+```
+/vale:onboard
+```
+
+It tries the common style packages against your docs in a temp directory,
+drafts a vocabulary and a decision for each noisy rule, and shows you one
+proposal — what it found, the before and after counts, the CI job. Nothing is
+written until you say yes, and by default the result is a pull request with
+that proposal as its description, so the rest of the team reviews the same
+thing you did. A word list kept for cspell or another spell checker is carried
+over into the vocabulary. If Vale itself is missing, it installs it: through
+Homebrew, pacman or snap where one is available, otherwise the release binary,
+checksum-verified, into a directory already on your `PATH`. On Windows a
+PowerShell installer does the same with winget, Scoop or Chocolatey.
+
+The two read-only scripts the skills run — the preview and the rule inventory
+— are pre-approved in the skills' own frontmatter, so Claude Code does not
+stop to ask before each one. The installer is not: installing software still
+prompts.
+
+No plugin support? Any coding agent that can run a shell can do the same:
+
+```
+Clone https://github.com/vale-cli/agent-tools into a temp directory, then
+follow skills/onboard/SKILL.md to set up Vale in this repository.
+```
+
 ## Install
 
 In Claude Code, type these two as slash commands (the second one restarts the
@@ -17,15 +48,16 @@ session so the hook and the MCP server register):
 /plugin install vale@agent-tools
 ```
 
-You also need the `vale` binary on your `PATH`
-([installation](https://docs.vale.sh/topics/installation)) — the plugin drives
-it, it doesn't bundle it. `jq` too, if you want the hook.
+The plugin drives the `vale` binary; it doesn't bundle it. `/vale:onboard` and
+`/vale:setup` install it if it is missing, or see
+[installation](https://docs.vale.sh/topics/installation).
 
 ### Check it worked
 
 Three separate things install, and they're verified three different ways.
 
-**The skills.** Type `/vale:` and five completions should appear — `setup`,
+**The skills.** Type `/vale:` and eleven completions should appear —
+`onboard`, `setup`, `doctor`, `tune`, `from-guide`, `write-guide`, `commits`,
 `fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
 
 **The hook.** This is the one that surprises people: it runs on *Claude's*
@@ -34,8 +66,8 @@ ask Claude to change a prose file in a repository that has a working Vale
 config, and watch it get pulled up on any error-level alert before it moves on.
 
 If nothing happens, that is often correct — the hook is silent unless a file
-Vale lints has an **error**. Warnings and suggestions never appear. Check the
-setup by hand first:
+Vale lints has an **error**. Warnings and suggestions never appear. Ask for
+`/vale:doctor`, or check the setup by hand:
 
 ```bash
 vale ls-config >/dev/null && echo "config resolves"
@@ -55,11 +87,25 @@ the task fits — or call them directly.
 
 | | | |
 |---|---|---|
-| `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. |
+| `/vale:onboard` | "set up vale end to end" | Previews the whole baseline in a temp directory — package, vocabulary, a decision per noisy rule, CI — shows it with before/after counts, and applies it on one yes. |
+| `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. Covers translated docs and the comments in source code. |
+| `/vale:doctor` | "why is the hook silent" | Checks the setup end to end — binary, config, synced styles, vocabulary, a real run — and gives the command that fixes each thing that is broken. |
+| `/vale:tune` | "use title case headings" | Changes one style choice in plain words — headings, contractions, "we", preferred terms — and writes it into the config with its reason. Ships tested templates for the choices no package covers. |
+| `/vale:from-guide` | "enforce our style guide" | Turns a written style guide into the project's own rules, each linked to its section and tested against the guide's own do and don't examples. Says which statements cannot be checked. |
+| `/vale:write-guide` | "document our vale rules" | Writes a readable style guide from the config — what blocks, the style choices and why, the vocabulary — in Markdown, MDX, AsciiDoc, reStructuredText, Org or HTML. |
+| `/vale:commits` | "lint our commit messages" | Scores your recent history against the common conventions, sets up the one it already follows, and adds the hook and the CI check. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
-| `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule: fix, downgrade, or switch off. |
-| `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. |
+| `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
+| `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. Imports a word list you already keep for cspell or another spell checker. Tells you whether the docs lean American or British, sets up a regional dictionary if you want one enforced, and installs dictionaries for other languages. |
 | `/vale:ci` | "run this on PRs" | Wires Vale into GitHub Actions, pre-commit, or another runner — and says whether it blocks. |
+
+`onboard` ships a small script, `skills/onboard/scripts/preview.sh`, that you
+can also run by hand to see what a package would report before adopting it. It
+needs only `vale` and writes nothing to the repository:
+
+```bash
+sh skills/onboard/scripts/preview.sh -p Google docs/
+```
 
 Each states its own trigger phrases, checks its prerequisites before touching
 anything, and ends with a report. A skill that can't run Vale says so rather
@@ -70,7 +116,9 @@ than improvising around it.
 `hooks/vale-edit.sh` runs every time **the assistant** writes or edits a file —
 not when you do. If that file is prose and the repository has a resolvable Vale
 config, it lints that one file and hands the alerts straight back for fixing,
-in the same turn.
+in the same turn. Source files count too, when your config has a section for
+them: Vale reads their comments, so a typo in a doc comment is caught the same
+way.
 
 It is silent in every other case — no Vale binary, no `jq`, no config, a file
 Vale doesn't lint, or a clean run.
@@ -91,8 +139,9 @@ reports**:
 | `warning` | errors and warnings |
 | `suggestion` | everything |
 
-Anything else is treated as `error` — the plugin config is free text, so a typo
-falls back rather than turning the hook into an error on every edit.
+The setting is a fixed list of those three. A value from an older settings
+file, or a mistyped `VALE_HOOK_LEVEL`, is treated as `error` rather than
+turning the hook into an error on every edit.
 
 To override it for one shell or outside the plugin, set `VALE_HOOK_LEVEL`,
 which wins over the plugin setting:
@@ -107,6 +156,26 @@ the output at all, and this decides what reaches Claude. Raising the level past
 
 Above `error`, each line carries its severity and the closing instruction
 changes to match — the errors get fixed, the rest is passed along as advice.
+
+### Commit messages
+
+A second hook, `hooks/vale-commit.sh`, runs after the assistant makes a commit.
+If the repository's config has a `[COMMIT_EDITMSG]` section — see
+`/vale:commits` — it lints the message git just recorded and hands back any
+error-level alerts, with the instruction to amend if the commit has not been
+pushed.
+
+A project's own `commit-msg` hook does this for people, but it is installed per
+clone, and an assistant's checkout usually has not run the project's setup.
+This gives the assistant's commits the same check. Without that section in the
+config it does nothing.
+
+### The language server, as an alternative
+
+`vale-lsp` is a second, experimental plugin in this marketplace. It connects
+Claude Code to Vale's language server, so alerts arrive as diagnostics after an
+edit with no shell involved. See [`plugins/vale-lsp`](plugins/vale-lsp). Use it
+or the edit hook, not both.
 
 ## The MCP server
 
@@ -145,9 +214,13 @@ repository sits across both:
 | **Hook** | the `vale` CLI, on your machine | no |
 | **MCP server** | Vale CMS, at `api.vale.sh` | yes |
 
-The skills and the hook **consume** styles — they run rules that already exist
-and act on the alerts. The MCP server **authors and verifies** them. That is why
-it is the paid piece: running a linter is Vale's job and it is free, while
+The hook and most of the skills **consume** styles — they run rules that
+already exist and act on the alerts. `tune` and `from-guide` also write rules,
+and check them the way anyone can: with `vale test`, against cases kept beside
+the rule. The MCP server goes further than a pass or fail — diagnosing why a
+pattern does not match, stress-testing for false positives the cases miss,
+diffing a change against a rule already in use. That is why it is the paid
+piece: running and testing a linter is Vale's job and it is free, while
 handing an assistant a live engine to check its own work against is what Vale
 CMS is.
 
@@ -157,9 +230,13 @@ CMS is.
   ([installation](https://docs.vale.sh/topics/installation)).
 - **The hook** needs `vale` and `jq`, plus any POSIX shell. It is plain `sh`,
   verified against `sh`, `bash`, `zsh`, and `dash`.
-- **Windows** works, but the hook needs Git Bash installed. Without it Claude
-  Code falls back to PowerShell, which cannot run a shell script, and the hook
-  does nothing. The skills and the MCP server are unaffected.
+- **Windows** works, with Git Bash installed (Git for Windows includes it).
+  The hook and the skills' helper scripts — preview, inventory, dictionary —
+  are POSIX shell; without Git Bash Claude Code falls back to PowerShell,
+  which cannot run them, so the hook does nothing and the skills do those
+  steps by hand. Installing Vale itself needs no shell: `setup` ships a
+  PowerShell installer that uses winget, Scoop or Chocolatey, or the release
+  zip. The MCP server is unaffected.
 
 Each part is independent, and a missing piece degrades quietly rather than
 breaking the others.

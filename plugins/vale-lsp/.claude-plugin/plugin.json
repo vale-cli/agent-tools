@@ -1,0 +1,37 @@
+{
+  "name": "vale-lsp",
+  "description": "Vale's language server for Claude Code: alerts on prose files arrive as diagnostics after each edit. Experimental; needs the vale-ls binary on PATH.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Joseph Kato",
+    "url": "https://vale.sh"
+  },
+  "homepage": "https://docs.vale.sh/guides/lsp",
+  "repository": "https://github.com/vale-cli/agent-tools",
+  "license": "MIT",
+  "keywords": [
+    "vale",
+    "prose",
+    "linting",
+    "lsp"
+  ],
+  "lspServers": {
+    "vale": {
+      "command": "vale-ls",
+      "extensionToLanguage": {
+        ".md": "markdown",
+        ".mdx": "mdx",
+        ".markdown": "markdown",
+        ".adoc": "asciidoc",
+        ".rst": "restructuredtext",
+        ".org": "org",
+        ".txt": "plaintext"
+      },
+      "initializationOptions": {
+        "installVale": false,
+        "syncOnStartup": false,
+        "filter": ".Level == 'error'"
+      }
+    }
+  }
+}

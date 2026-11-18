@@ -6,13 +6,18 @@
   },
   "metadata": {
     "description": "Agent tooling for Vale, the prose linter.",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "vale",
       "source": "./",
-      "description": "Set up Vale, fix its alerts, triage a first run, and keep prose linted as you edit."
+      "description": "Onboard a repository to Vale in one prompt, tune its style choices, turn a style guide into tested rules, and keep prose linted as you edit."
+    },
+    {
+      "name": "vale-lsp",
+      "source": "./plugins/vale-lsp",
+      "description": "Vale's language server for Claude Code: alerts on prose files arrive as diagnostics after each edit. Experimental; needs the vale-ls binary on PATH."
     }
   ]
 }

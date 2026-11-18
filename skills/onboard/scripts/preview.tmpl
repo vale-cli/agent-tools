@@ -1,0 +1,8 @@
+{{- /*
+	One alert per line, tab-separated: severity, check, path, line, message,
+	match. preview.sh parses this with awk, so the format and the parser
+	move together. The match comes last because it can span lines; the
+	parser only reads lines that open with a severity.
+*/ -}}
+{{- range .Files}}{{$p := .Path}}{{- range .Alerts}}{{.Severity}}	{{.Check}}	{{$p}}	{{.Line}}	{{.Message}}	{{.Match}}
+{{end}}{{- end}}

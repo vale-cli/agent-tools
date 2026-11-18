@@ -1,0 +1,27 @@
+# Title-case headings. Use instead of the package's sentence-case rule:
+# switch that one off in .vale.ini (Microsoft.Headings = NO, or
+# Google.Headings = NO) or every heading is flagged by one of the two.
+#
+# `style` is Chicago or AP, and they disagree about short words: Chicago
+# writes "Working with Files", AP writes "Working With Files". Ask which the
+# team uses, or count both against the corpus and take the quieter one.
+#
+# Add any name that keeps its own casing to `exceptions`.
+extends: capitalization
+message: "'%s' should use title-style capitalization."
+level: suggestion
+scope: heading
+match: $title
+style: Chicago
+exceptions:
+  - macOS
+tests:
+  - name: accepts a title-case heading
+    input: '# Working with Files'
+    want: ''
+  - name: flags a sentence-case heading
+    input: '# Working with files'
+    contains: title-style
+  - name: leaves body text alone
+    input: This sentence is ordinary prose, not a heading.
+    want: ''

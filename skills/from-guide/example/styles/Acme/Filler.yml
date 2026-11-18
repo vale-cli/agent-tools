@@ -1,0 +1,21 @@
+# Guide: Words > Filler
+extends: existence
+message: "Remove '%s': don't tell the reader something is easy."
+link: style-guide.md#filler
+level: warning
+ignorecase: true
+tokens:
+  - simply
+  - just
+  - easy
+  - obviously
+tests:
+  - name: the guide's "don't" example is flagged
+    input: Simply run the installer.
+    contains: "'Simply'"
+  - name: the guide's "do" example passes
+    input: Run the installer.
+    want: ''
+  - name: a longer word containing one is left alone
+    input: The adjustment is justified.
+    want: ''

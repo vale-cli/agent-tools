@@ -1,0 +1,15 @@
+# Guide: Sentences
+extends: occurrence
+message: "Keep sentences to 30 words or fewer."
+link: style-guide.md#sentences
+level: suggestion
+scope: sentence
+max: 30
+token: '\b(\w+)\b'
+tests:
+  - name: a 31-word sentence is flagged
+    input: one two three four five six seven eight nine ten one two three four five six seven eight nine ten one two three four five six seven eight nine ten eleven.
+    contains: 30 words or fewer
+  - name: a 30-word sentence passes
+    input: one two three four five six seven eight nine ten one two three four five six seven eight nine ten one two three four five six seven eight nine ten.
+    want: ''
