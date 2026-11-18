@@ -1,7 +1,7 @@
 ---
 name: onboard
 description: Take a repository from no Vale to a quiet, committed baseline in one pass — config, vocabulary, a decision per noisy rule, and CI — with one proposal and one yes. Use when the user says "set up vale end to end", "onboard this repo to vale", "get us started with prose linting", or asks for setup and wants it finished rather than started.
-allowed-tools: Bash(sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh *)
+allowed-tools: Bash(sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh *), Bash(sh ${CLAUDE_SKILL_DIR}/scripts/survey.sh *)
 ---
 
 # Onboard a repository to Vale
@@ -46,7 +46,16 @@ package that will not sync — say so and propose on a sample.
 
 ## Workflow: look and preview
 
-**1. Look.** No questions yet.
+**1. Look.** No questions yet. `scripts/survey.sh` reads the repository in a
+fraction of a second and prints what there is to work with: where the prose
+is, translated docs, source code by language, a written style guide, existing
+CI and hook runners, and whether Vale is installed or configured.
+
+```bash
+sh ${CLAUDE_SKILL_DIR}/scripts/survey.sh
+```
+
+It reports facts, not decisions. Then:
 
 - `vale --version`. If it fails, install it — `setup` has the script — and
   say that you did. Do not stop to ask.
@@ -58,11 +67,11 @@ package that will not sync — say so and propose on a sample.
   boilerplate. Otherwise: `docs/`, `content/`, `website/docs/`, root `*.md`.
   Give Vale the docs directory, never the repository root: it does not skip
   `node_modules` or vendored trees on its own.
-- Look for what is not English prose, because both change the config:
-  translated docs in locale-named directories (`docs/fr/`, `i18n/de/`), and
-  whether the user asked about code comments. `setup` has the section for
-  each. Translations get their own section so they are not read as English.
-  Code comments are opt-in: mention them in the proposal, do not add them.
+- Translated docs inside the path you are about to lint must not be read as
+  English: that is hundreds of false alerts. The quiet default is a section
+  that names the language and leaves spell check off —
+  `[docs/fr/**/*.md]` with `Lang = fr`, `BasedOnStyles = Vale` and
+  `Vale.Spelling = NO`. Checking them properly is an option, below.
 - Note what is already there: a CI workflow, a pre-commit config, a written
   style guide, and leftovers from an older Vale setup such as a script that
   downloads styles by hand. Leftovers go in the report, not in the bin.
@@ -92,8 +101,8 @@ rules alone, since the style packages are written for English prose.
 
 ## Workflow: draft
 
-**3. Draft the baseline, still in temp files.** Four things, each a few
-minutes at most.
+**3. Draft the baseline, still in temp files.** Five things, each a minute or
+two at most.
 
 - *Front matter.* Look at where the unknown terms are. Hits on the first lines
   of files are front matter — `id: vscode`, a `slug` — and those are URLs, not
@@ -101,10 +110,9 @@ minutes at most.
   with `-i text.frontmatter.id,text.frontmatter.slug`; `vocab` has the config
   line this becomes.
 - *Which English.* `vocab`'s `scripts/dictionary.sh -d <path>` counts
-  American and British spellings in a second. Put the result in the proposal
-  as a style choice. Do not install a regional dictionary during onboarding:
-  it multiplies unknown terms. Offer it as a follow-up when the lean is clear
-  and there are strays.
+  American and British spellings in a second. Keep the result for the options
+  list. Do not install a regional dictionary during onboarding: it multiplies
+  unknown terms.
 - *Vocabulary.* `Vale.Spelling` is error-level and usually the largest source
   of first-run errors, nearly all of them names. Put the real terms in a
   scratch `accept.txt`. Leave out anything that looks like a typo or an
@@ -153,20 +161,26 @@ Style choices — from how the docs are written today; change any
   Headings       sentence case   12 hits, 8 of them product names I've accepted
   "We"           allowed         52 uses; the docs speak as "we" throughout
   Contractions   advice only     8 hits; was blocking
-  Spelling       American        79 American, 1 British ("centre"); not enforced
   "e.g."         spell out       4 hits; shown in review, not blocking
   Terms          VS Code, IntelliJ   5 inconsistent spellings get a fix
 
 Other overrides: 1
   Microsoft.Quotes = warning     9 hits, right rule; not blocking yet
-Also here:   docs/fr/ (38 files) gets its own section, so French is not read
-             as English. Spell check there needs a French dictionary — say
-             so and I'll add it.
-             212 .go files: comments are not linted. Say so to add them.
 CI:          update .github/workflows/main.yml — advisory, and only on lines
              a pull request adds, so the backlog never lands on anyone
 Still errors: 5 — the inconsistent spellings above. Real findings; I'd leave
               them for a follow-up fix.
+
+Not included — say the word for any of these
+  Blocking CI        5 errors would fail it today; fix those first
+  One-click fixes    suggested changes on pull requests (not from forks)
+  French docs        docs/fr (38 files) are skipped; needs a dictionary
+  Code comments      212 .go, 40 .py files
+  One spelling       79 American, 1 British ("centre") — enforce American
+  Commit messages    closest to the "seven rules": 10 of your last 14 pass
+  Your style guide   docs/style-guide.md → tested rules
+  A written guide    generated from this config, for contributors
+  In your editor     alerts as you type
 
 The reasons in the config are what I observed, for you to replace with yours.
 Apply this? Or tell me what to change.
@@ -190,6 +204,24 @@ start over, and do not re-ask what was already accepted.
 
 Default CI to advisory. A job that is red on its first run teaches the team to
 ignore it.
+
+**Quiet by default, complete by mention.** The baseline you propose is the
+smallest one that is useful: English prose, one package, advisory CI. Every
+other thing Vale can do for this repository goes in "Not included" — named,
+with one fact, and switched off. The rules for that list:
+
+- One line each, and only options the survey shows apply here. No source
+  files, no code-comments line. No style guide found, no style-guide line.
+- One fact per line, from something you already ran: the survey, the preview,
+  `dictionary.sh -d`. For commit messages, `commits`' `scripts/history.sh
+  -n 20` takes a few seconds; skip the line if it is not available.
+- No explanation and no recommendation. If they ask about one, explain then.
+- Never turn one on because it seems like a good idea. Each is a separate
+  yes, and each has its own skill: `ci` for blocking and suggested fixes,
+  `setup` for translations and code comments, `vocab` for dictionaries,
+  `commits`, `from-guide`, `write-guide`.
+- Leave a line out once it is done. A repository that already has a hook
+  runner linting commits does not need the offer.
 
 If what is left includes errors you cannot clear honestly — a false positive
 with no clean exemption — say so in "Still errors" and keep CI advisory.
@@ -231,15 +263,12 @@ together, following the repository's conventions. Not the synced packages.
 
 ## Workflow: finish
 
-**8. Offer the editor.** One line, not a step to wait on: alerts as they type
-come from the Vale language server, which most editors can use —
-<https://docs.vale.sh/guides/lsp.md>. CI catches it at review; the editor
-catches it before.
-
-**9. Close with the result and one next step.** The table from the proposal,
+**8. Close with the result and one next step.** The table from the proposal,
 what was committed, the exit code, any leftovers you noticed, and the single
 most useful thing to do next — usually "fix the 5 remaining errors, then CI
-can block". Not a menu.
+can block". Not a menu: the options were in the proposal, and repeating them
+here is noise. If they picked one — the editor, say — do it or point to it
+now (<https://docs.vale.sh/guides/lsp.md> for the language server).
 
 ## If it is interrupted
 

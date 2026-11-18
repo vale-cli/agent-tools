@@ -14,7 +14,8 @@ Conventional Commits, the seven rules, gitmoji, the Go and kernel styles, a
 Jira key — and equivalents of commitlint, gitlint, committed, conform and
 commitizen for a team replacing one of those.
 
-This is separate from prose linting. Do not add it during `onboard` unasked.
+This is separate from prose linting. `onboard` names it as an option, with
+the history's closest convention; it is added only when the user says so.
 
 ## Prerequisites
 

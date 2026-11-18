@@ -156,9 +156,11 @@ BasedOnStyles = Vale
   Without one it skips the files and says so. `vocab` has the script that
   installs one.
 
-If there is no dictionary to be had, or the team does not want translations
-checked, leave them out of the linted paths rather than linting them as
-English.
+If there is no dictionary yet, or the team does not want translations
+checked, keep the section and add `Vale.Spelling = NO` to it. That records
+the language, stops the files being read as English, and is silent — without
+it Vale warns about the missing dictionary on every run. Remove the line once
+a dictionary is installed.
 
 ### Comments in source code
 
