@@ -7,8 +7,9 @@
 #   survey.sh [dir]
 #
 # Reports where the prose is, translated docs, source code by language, a
-# written style guide, existing CI and hook runners, and whether Vale is
-# already installed or configured. Each line is a fact, not a recommendation.
+# written style guide, word lists and configs kept for other linters,
+# existing CI and hook runners, and whether Vale is already installed or
+# configured. Each line is a fact, not a recommendation.
 #
 # POSIX sh and POSIX tools only. Uses git's file list when there is one, so
 # ignored and vendored files are left out.
@@ -73,6 +74,15 @@ echo "Source code:   ${code:-none}"
 guide=$(grep -i -E '(style[-_ ]?guide|writing[-_ ]?(guide|style)|(^|/)style)[^/]*\.(md|mdx|adoc|rst|txt)$' "$list" |
 	grep -v -i -E '(^|/)styles[^/]*$' | head -n 3 | tr '\n' ' ')
 echo "Style guide:   ${guide:-none found}"
+
+# ---- What the project already decided, in another tool's format
+words=$(grep -E '(^|/)(\.?cspell(\.config)?\.(json|jsonc|ya?ml)|\.wordlist\.txt|wordlist\.txt|\.spelling|spelling_wordlist\.txt|\.aspell\.[a-z]+\.pws|\.github/actions/spelling/allow\.txt)$' "$list" | head -n 4 | tr '\n' ' ')
+if [ -z "$words" ] && [ -f .vscode/settings.json ] && grep -q 'cSpell.words' .vscode/settings.json 2>/dev/null; then
+	words='.vscode/settings.json (cSpell.words) '
+fi
+echo "Word lists:    ${words:-none}"
+other=$(grep -E '(^|/)(\.markdownlint(-cli2)?\.(json|jsonc|ya?ml|cjs|mjs)|\.markdownlintrc|\.textlintrc(\.(json|ya?ml|js))?|\.codespellrc|\.alexrc(\.(json|ya?ml|js))?|\.proselintrc(\.json)?|\.?commitlint(rc|\.config)[^/]*|\.gitlint|\.languagetool[^/]*)$' "$list" | head -n 6 | tr '\n' ' ')
+echo "Other linters: ${other:-none}"
 
 # ---- CI and hooks
 ci=''

@@ -75,6 +75,12 @@ It reports facts, not decisions. Then:
 - Note what is already there: a CI workflow, a pre-commit config, a written
   style guide, and leftovers from an older Vale setup such as a script that
   downloads styles by hand. Leftovers go in the report, not in the bin.
+- Carry over decisions the project made in another tool. A word list is
+  imported into the vocabulary (step 3). A config for markdownlint, textlint,
+  codespell or commitlint is evidence of what the team cares about: read it,
+  and let it inform the style choices and the options list. Do not remove or
+  replace the other tool; say that Vale now overlaps with it and leave the
+  choice to them.
 - Pick the project's name, used for the vocabulary and any own rules: the
   product or repository name in one capitalised word. Not `Vale`, and not a
   package's name.
@@ -114,8 +120,11 @@ two at most.
   list. Do not install a regional dictionary during onboarding: it multiplies
   unknown terms.
 - *Vocabulary.* `Vale.Spelling` is error-level and usually the largest source
-  of first-run errors, nearly all of them names. Put the real terms in a
-  scratch `accept.txt`. Leave out anything that looks like a typo or an
+  of first-run errors, nearly all of them names. If the survey found a word
+  list kept for another spell checker, start from it: `vocab`'s
+  `scripts/import-words.sh` turns it into entries, keeping only the words
+  Vale does not already know. Then put the remaining real terms from the
+  preview in the same scratch `accept.txt`. Leave out anything that looks like a typo or an
   inconsistent casing — those are findings.
 - *Overrides.* Every error-level rule needs a decision before CI can block on
   anything; the preview's examples show one real hit of each. Use the `triage`
@@ -154,7 +163,7 @@ What it found, in your files
   "Intellij" in clients/intellij.md:10 — the product is "IntelliJ"
 
 Package:     Microsoft   (Google: 571 alerts, 67 errors — say so to switch)
-Vocabulary:  12 terms    Jilles, Tengo, Linode, Buildkite, …
+Vocabulary:  41 terms    29 carried over from cspell.json, 12 new: Jilles, Tengo, …
 Not linted:  front matter `id` and `slug` — page URLs, not prose
 
 Style choices — from how the docs are written today; change any
@@ -183,7 +192,7 @@ Not included — say the word for any of these
   In your editor     alerts as you type
 
 The reasons in the config are what I observed, for you to replace with yours.
-Apply this? Or tell me what to change.
+Apply this as a pull request? Or tell me what to change.
 ```
 
 Lead with two or three things it actually caught, picked from the preview's
@@ -258,8 +267,24 @@ vale --output=line <path> >/dev/null; echo "exit $?"
 Exit 1 is expected while errors remain, and is not a failure of the setup.
 Exit 0 means a blocking job would pass today.
 
-**7. Commit** the config, ignore rules, vocabulary, own rules and CI change
-together, following the repository's conventions. Not the synced packages.
+**7. Commit, and open it as a pull request where the team reviews that way.**
+The config, ignore rules, vocabulary, own rules and CI change go in one
+commit on a branch, following the repository's conventions. Not the synced
+packages.
+
+A baseline is a set of editorial decisions, and the person at the keyboard is
+rarely the only one they affect. So the default ending is a pull request
+whose description is the proposal — the table, what it found, each choice and
+its reason, the "Not included" list — so the rest of the team approves the
+same thing the user did, and nothing reaches the main branch until they do.
+Add one line at the top saying how to try it locally (`vale sync`, then
+`vale <path>`).
+
+Follow what the user and the repository want, in this order: what the user
+said ("just commit it", "no PR"); the repository's own rules about branches
+and pull requests; then this default. If you cannot open one — no remote, no
+access — commit on a branch, say so, and put the description in the final
+message for them to paste.
 
 ## Workflow: finish
 
@@ -280,6 +305,8 @@ what is missing, saying what you skipped.
 
 - Do not write to the repository before the yes. The preview exists so that
   nothing has to be undone.
+- Do not push to the default branch or merge the pull request yourself. The
+  yes was to the baseline, not to skipping the team's review.
 - Do not ask questions the preview can answer. "Which package?" with no
   numbers is a worse question than the proposal.
 - Do not reach a clean exit by raising `MinAlertLevel`, adding `--no-exit`, or

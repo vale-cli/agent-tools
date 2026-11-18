@@ -1,7 +1,7 @@
 ---
 name: vocab
 description: Add project terms to a Vale vocabulary so spell check accepts them, and set up a regional dictionary when the team wants British, Australian, Canadian or American spelling enforced. Use when the user says "vale doesn't know our product name", "stop flagging this word", "we write in British English", "flag American spellings", or spelling alerts are firing on correct terms.
-allowed-tools: Bash(sh ${CLAUDE_SKILL_DIR}/scripts/dictionary.sh -d *)
+allowed-tools: Bash(sh ${CLAUDE_SKILL_DIR}/scripts/dictionary.sh -d *), Bash(sh ${CLAUDE_SKILL_DIR}/scripts/import-words.sh *)
 ---
 
 # Teach Vale a project's own words
@@ -41,6 +41,29 @@ IgnoredScopes = code, tt, kbd, samp, text.frontmatter.id, text.frontmatter.slug
 
 Setting `IgnoredScopes` replaces Vale's defaults, which is why the first four
 are restated. Every front matter field has a scope named after it.
+
+**Start from a word list the project already has**, if there is one. A
+`cspell.json`, a `.wordlist.txt`, a `.spelling` file, `cSpell.words` in VS
+Code settings — someone has already decided those terms are right:
+
+```bash
+sh ${CLAUDE_SKILL_DIR}/scripts/import-words.sh cspell.json > imported.txt
+```
+
+It prints `accept.txt` entries for the words Vale's own spell check does not
+know, usually a small part of the list, and says how many. Two things it does
+on purpose:
+
+- An all-lowercase word becomes `(?i)word`. Those lists ignore case and a
+  vocabulary does not: a plain `kubernetes` entry would make Vale flag
+  "Kubernetes" as the wrong casing.
+- A word with capitals is kept as written, so Vale holds the docs to that
+  casing. If that flags a lowercase use the team considers fine, make the
+  entry `(?i)` too.
+
+Read the result as you would any list of terms; an old word list collects
+typos someone silenced. Keep the old file until the team decides to retire the
+other spell checker — that is their call, not part of this.
 
 **2. Create the vocabulary.** It lives inside `StylesPath` but is the one part
 of it that is yours and survives `vale sync`:

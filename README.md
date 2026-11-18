@@ -18,7 +18,10 @@ With the plugin installed, in a repository that has prose and no Vale yet:
 It tries the common style packages against your docs in a temp directory,
 drafts a vocabulary and a decision for each noisy rule, and shows you one
 proposal — what it found, the before and after counts, the CI job. Nothing is
-written until you say yes. If Vale itself is missing, it installs it: through
+written until you say yes, and by default the result is a pull request with
+that proposal as its description, so the rest of the team reviews the same
+thing you did. A word list kept for cspell or another spell checker is carried
+over into the vocabulary. If Vale itself is missing, it installs it: through
 Homebrew, pacman or snap where one is available, otherwise the release binary,
 checksum-verified, into a directory already on your `PATH`. On Windows a
 PowerShell installer does the same with winget, Scoop or Chocolatey.
@@ -93,7 +96,7 @@ the task fits — or call them directly.
 | `/vale:commits` | "lint our commit messages" | Scores your recent history against the common conventions, sets up the one it already follows, and adds the hook and the CI check. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
-| `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. Tells you whether the docs lean American or British, sets up a regional dictionary if you want one enforced, and installs dictionaries for other languages. |
+| `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. Imports a word list you already keep for cspell or another spell checker. Tells you whether the docs lean American or British, sets up a regional dictionary if you want one enforced, and installs dictionaries for other languages. |
 | `/vale:ci` | "run this on PRs" | Wires Vale into GitHub Actions, pre-commit, or another runner — and says whether it blocks. |
 
 `onboard` ships a small script, `skills/onboard/scripts/preview.sh`, that you
