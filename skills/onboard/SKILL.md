@@ -1,6 +1,6 @@
 ---
 name: onboard
-description: Take a repository from no Vale to a quiet, committed baseline in one pass — config, vocabulary, a decision per noisy rule, and CI. Use when the user says "set up vale end to end", "onboard this repo to vale", "get us started with prose linting", or asks for setup and wants it finished rather than started.
+description: Take a repository from no Vale to a quiet, committed baseline in one pass — config, vocabulary, a decision per noisy rule, and CI — with one proposal and one yes. Use when the user says "set up vale end to end", "onboard this repo to vale", "get us started with prose linting", or asks for setup and wants it finished rather than started.
 ---
 
 # Onboard a repository to Vale
@@ -10,93 +10,136 @@ description: Take a repository from no Vale to a quiet, committed baseline in on
 The repository has no working Vale config and the user wants the whole job:
 not a `.vale.ini` and two thousand alerts, but a baseline the team can keep.
 
-This skill is the order of operations. The work in each step belongs to
-`setup`, `vocab`, `triage` and `ci`; follow those, and their "Do not" lists
-still apply. If the user wants only one of them, use that one instead.
+The details of each part belong to `setup`, `vocab`, `triage` and `ci`, and
+their "Do not" lists still apply. This skill is how to do all four without
+stopping four times. If the user wants only one of them, use that one.
 
-## Ask once, up front
+## The shape: look, draft, one yes, apply
 
-Everything that is the team's decision, in one message, before any file
-changes. Offer a default for each so a bare "go" is a usable answer:
+Everything up to the proposal happens in a temp directory. Nothing in the
+repository changes until the user has seen the whole baseline — the config,
+the vocabulary, each override and its reason, the CI job, and the numbers —
+and said yes once.
 
-1. **Where the prose lives** — say what you found (`docs/`, 42 `.md`, 16
-   `.mdx`) and ask them to confirm.
-2. **Which style package** — Microsoft, Google, or another from
-   <https://vale.sh/explorer>. It is an editorial choice.
-3. **Whether CI should block**, and on which runner. Default: advisory.
-4. **Whether to fix what is left** at the end, or stop at the baseline.
-   Default: stop.
+That is what makes it feel finished rather than interrogated: the user is
+asked to approve a concrete result, not to answer questions about a tool they
+have not seen run yet.
 
-Do not ask again mid-run unless a step turns up something these answers do not
-cover.
+Say one short line as each step starts ("Trying Microsoft and Google against
+docs/…"). Long silences read as being stuck.
 
 ## Workflow
 
-**1. Set up** (`setup`). Config, ignore rules, `vale sync`, one file linted.
-If `vale ls-config` finds a config that does not resolve, repair that one
-rather than writing a second.
+**1. Look.** No questions yet.
 
-**2. Take the first count** and keep it — it is the "before" in the report:
+- `vale --version`. If it fails, install it (see `setup`) and say that you did.
+- `vale ls-config`. If a config already resolves, this is not onboarding — say
+  so and offer `triage`. If one exists and fails to load, repair it rather
+  than writing a second.
+- Find the prose: `docs/`, `content/`, `website/docs/`, root `*.md`. Leave out
+  vendored, generated and changelog files.
+- Note what is already there: an existing CI workflow, a pre-commit config, a
+  written style guide.
+
+**2. Preview the candidates.** `scripts/preview.sh`, beside this file, builds
+a throwaway config in a temp directory and prints the counts by severity and
+rule plus the terms spell check does not know. It needs only `vale`, and it
+writes nothing to the repository:
 
 ```bash
-vale --no-exit --output=JSON <path> > /tmp/vale-before.json
+sh <this skill's directory>/scripts/preview.sh -p Microsoft <path>
+sh <this skill's directory>/scripts/preview.sh -p Google <path>
 ```
 
-**3. Vocabulary before triage** (`vocab`). `Vale.Spelling` is an error-level
-rule and on a first run it is commonly the largest source of errors, nearly
-all of them product names. Triaging before the vocabulary exists means
-deciding about noise that is about to disappear. Read the list; what is left
-after the vocabulary should be real typos.
+If the user named a package, preview that one. Otherwise preview Microsoft and
+Google, so the choice between them comes with numbers instead of a shrug.
 
-**4. Triage** (`triage`). A package ships some of its rules at `error`, so a
-first run usually has errors nobody chose. Each one needs a decision before CI
-can block on anything. Show the plan with the exact lines, get a yes, write
-them with their reasons, re-run.
+**3. Draft the baseline, still in temp files.**
 
-**5. Confirm what blocks.**
+- *Vocabulary first.* `Vale.Spelling` is error-level and usually the largest
+  source of first-run errors, nearly all of them names. Put the real terms in
+  a scratch `accept.txt`. Leave out anything that looks like a typo or an
+  inconsistent casing — those are findings, and they belong in the report.
+- *Then overrides*, by the `triage` buckets, in a scratch file with the reason
+  as a comment above each line. A package ships some rules at `error`; each of
+  those needs a decision before CI can block on anything.
+- *Run the preview again* with both, and keep the output:
+
+```bash
+sh <this skill's directory>/scripts/preview.sh -p Microsoft -a accept.txt -o overrides.ini <path>
+```
+
+**4. Propose once.** One message, in this order, short enough to read:
+
+```
+Vale baseline for docs/ (40 .md, 14 .mdx) — nothing written yet
+
+              total   errors  warnings  suggestions
+First run       404       52        99          253
+With baseline   335       11        65          259
+
+Package:     Microsoft   (Google: 571 alerts, 67 errors — say so to switch)
+Vocabulary:  12 terms    Jilles, Tengo, Linode, Buildkite, …
+Overrides:   4
+  Microsoft.We = NO                    docs address the reader as "we"
+  Microsoft.Quotes = warning           right rule, 9 existing hits
+  Microsoft.Contractions = suggestion  register varies by page
+  Microsoft.Foreign = warning          right rule, 4 existing hits
+CI:          update .github/workflows/main.yml, advisory
+Still errors: 11 — inconsistent spellings ("VSCode", "intellij"). Real
+              findings; I'd leave them for a follow-up fix.
+
+Apply this? Or tell me what to change.
+```
+
+Every editorial choice is in there with the default you picked and the
+alternative: the package, each override, whether CI blocks. A "yes" accepts
+all of it; "use Google" or "keep We" changes one line and you re-preview —
+do not start over, and do not re-ask what was already accepted.
+
+Default CI to advisory. A job that is red on its first run teaches the team to
+ignore it.
+
+**5. Apply**, in one go, once they say yes:
+
+- `.vale.ini`, the ignore rules and `vale sync` (`setup`)
+- the vocabulary, named in the config (`vocab`)
+- the overrides, each with its reason (`triage`)
+- the CI change — update a job that already runs Vale rather than adding a
+  second (`ci`)
+
+**6. Verify against the preview.**
 
 ```bash
 vale --output=line <path> >/dev/null; echo "exit $?"
 ```
 
-Exit 1 means errors remain. That is a fine place to stop — they are the short
-list of things worth fixing — but say it, because it decides step 6.
+The real run should match the previewed numbers. If it does not, a section
+glob or an override is not matching; find out which before reporting.
 
-**6. CI** (`ci`). If errors remain and the user asked for a blocking job,
-either fix them first (`fix`) or wire it advisory and say why. Do not ship a
-job that is red on its first run. If the repository already runs Vale in CI,
-update that job rather than adding a second.
+**7. Commit** the config, ignore rules, vocabulary and CI change together,
+following the repository's conventions. Not the synced packages.
 
-**7. Commit** the config, the ignore rules, the vocabulary and the CI change
-together, following the repository's conventions. Not the synced packages.
+**8. Close with the result and one next step.** The table from the proposal,
+what was committed, the exit code, and the single most useful thing to do
+next — usually "fix the 11 remaining errors, then CI can block". Not a menu.
 
-**8. Report.**
+## If it is interrupted
 
-```
-Vale onboarding
-===============
-Config:      .vale.ini  ([*.{md,mdx}] → Vale, Microsoft)
-Vocabulary:  ValeDocs, 12 terms accepted
-Baseline:    4 overrides written, each with its reason
-
-              total   errors  warnings  suggestions
-First run       404       52        99          253
-After vocab     382       30        99          253
-After triage    335       11        65          259
-
-Blocking now: 11 alerts, 1 rule (Vale.Spelling — real typos, listed below)
-CI:           GitHub Actions, advisory
-Left for you: fix the 11, then the job can block
-```
+Running this again should pick up, not restart. Check what exists — a config
+that resolves, a vocabulary, overrides with comments, a CI job — and do only
+what is missing, saying what you skipped.
 
 ## Do not
 
-- Do not skip the questions and pick the style package or the CI mode
-  yourself. A baseline built on a guess gets thrown away.
+- Do not write to the repository before the yes. The preview exists so that
+  nothing has to be undone.
+- Do not ask questions the preview can answer. "Which package?" with no
+  numbers is a worse question than the proposal.
 - Do not reach a clean exit by raising `MinAlertLevel`, adding `--no-exit`, or
   accepting typos into the vocabulary. The count that matters is the one
   nobody had to hide.
-- Do not edit prose during onboarding unless the user asked for the fix step.
-  A setup pull request that also rewrites forty pages will not be reviewed.
-- Do not report "set up" without the before and after counts and the exit
-  code.
+- Do not edit prose during onboarding unless the user asked for it. A setup
+  pull request that also rewrites forty pages will not be reviewed.
+- Do not bury the proposal in explanation. If it does not fit on one screen,
+  cut the commentary, not the overrides.

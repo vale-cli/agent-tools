@@ -55,12 +55,20 @@ the task fits — or call them directly.
 
 | | | |
 |---|---|---|
-| `/vale:onboard` | "set up vale end to end" | Runs setup, vocabulary, triage and CI in order, asking its questions once, and ends with a committed baseline and a before/after count. |
+| `/vale:onboard` | "set up vale end to end" | Previews the whole baseline in a temp directory — package, vocabulary, a decision per noisy rule, CI — shows it with before/after counts, and applies it on one yes. |
 | `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
 | `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. |
 | `/vale:ci` | "run this on PRs" | Wires Vale into GitHub Actions, pre-commit, or another runner — and says whether it blocks. |
+
+`onboard` ships a small script, `skills/onboard/scripts/preview.sh`, that you
+can also run by hand to see what a package would report before adopting it. It
+needs only `vale` and writes nothing to the repository:
+
+```bash
+sh skills/onboard/scripts/preview.sh -p Google docs/
+```
 
 Each states its own trigger phrases, checks its prerequisites before touching
 anything, and ends with a report. A skill that can't run Vale says so rather

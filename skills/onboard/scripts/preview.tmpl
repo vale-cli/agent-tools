@@ -1,0 +1,6 @@
+{{- /*
+	One alert per line, tab-separated: severity, check, match. preview.sh
+	parses this with awk, so the format and the parser move together.
+*/ -}}
+{{- range .Files}}{{- range .Alerts}}{{.Severity}}	{{.Check}}	{{.Match}}
+{{end}}{{- end}}
