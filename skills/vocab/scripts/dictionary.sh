@@ -3,8 +3,9 @@
 # Work out which English a project writes in, and install the dictionary
 # that enforces it.
 #
-#   dictionary.sh -d path...        count American and British spellings
-#   dictionary.sh [-c .vale.ini] en_GB    install that dictionary
+#   dictionary.sh -d path...             count American and British spellings
+#   dictionary.sh [-c .vale.ini] en_GB   install a regional English dictionary
+#   dictionary.sh [-c .vale.ini] fr      install another language's dictionary
 #
 # Vale's built-in dictionary accepts both "color" and "colour", so a project
 # gets no spelling noise from either -- and no help keeping to one. A regional
@@ -12,10 +13,15 @@
 # dictionary: it does not know "plugin" or "config" the way the built-in one
 # does, so expect the vocabulary to grow when you switch.
 #
-# Dictionaries: en_GB, en_AU, en_CA, en_ZA, en_US. They are the Hunspell
-# files LibreOffice ships, downloaded into <StylesPath>/config/dictionaries,
-# which is source and belongs in the repository. Their licences vary by
-# dictionary (LGPL, BSD, MIT and others); the readme is downloaded alongside.
+# For a language other than English the dictionary is what makes spell check
+# work at all: Vale carries none, and skips files in a language it has no
+# dictionary for. Name the language as the config's `Lang` key does -- fr, de,
+# es, pt-BR -- and the files are saved under the name Vale looks for.
+#
+# The dictionaries are Hunspell files from the `wooorm/dictionaries`
+# collection (about ninety languages), downloaded into
+# <StylesPath>/config/dictionaries, which is source and belongs in the
+# repository. Their licences vary by language; each one's is saved beside it.
 #
 # POSIX sh and POSIX tools only, plus curl for the download.
 set -u
@@ -67,16 +73,18 @@ if [ "$detect" -eq 1 ]; then
 	exit 0
 fi
 
-[ $# -eq 1 ] || { echo "usage: dictionary.sh -d path... | dictionary.sh [-c .vale.ini] en_GB" >&2; exit 2; }
-dict=$1
-case "$dict" in
-en_GB | en_AU | en_CA | en_ZA | en_US) ;;
-*)
-	echo "dictionary.sh: '$dict' is not one this script fetches (en_GB, en_AU, en_CA, en_ZA, en_US)." >&2
-	echo "Any Hunspell .dic/.aff pair works: put it in <StylesPath>/config/dictionaries yourself." >&2
-	exit 2
-	;;
+[ $# -eq 1 ] || { echo "usage: dictionary.sh -d path... | dictionary.sh [-c .vale.ini] <en_GB|fr|de|...>" >&2; exit 2; }
+case "$1" in
+*[!A-Za-z_-]* | '') echo "dictionary.sh: '$1' is not a language code (en_GB, fr, de, pt-BR)" >&2; exit 2 ;;
 esac
+# The collection names its folders with a hyphen (en-GB); Hunspell and Vale
+# name the files with an underscore (en_GB). American English is plain "en".
+name=$(printf '%s' "$1" | tr '-' '_')
+src=$(printf '%s' "$1" | tr '_' '-')
+case "$name" in
+en_US | en) src=en; name=en_US ;;
+esac
+
 [ -f "$cfg" ] || { echo "dictionary.sh: no config at $cfg; set Vale up first" >&2; exit 2; }
 command -v curl >/dev/null 2>&1 || { echo "dictionary.sh: curl is required" >&2; exit 2; }
 
@@ -89,24 +97,31 @@ esac
 dest=$sp/config/dictionaries
 mkdir -p "$dest"
 
-base=https://raw.githubusercontent.com/LibreOffice/dictionaries/master/en
+base=https://raw.githubusercontent.com/wooorm/dictionaries/main/dictionaries/$src
 for ext in dic aff; do
-	curl -fsSL -o "$dest/$dict.$ext.part" "$base/$dict.$ext" || {
-		rm -f "$dest/$dict.$ext.part"
-		echo "dictionary.sh: could not download $base/$dict.$ext" >&2
+	if ! curl -fsSL -o "$dest/$name.$ext.part" "$base/index.$ext"; then
+		rm -f "$dest/$name.dic.part" "$dest/$name.aff.part" "$dest/$name.dic"
+		echo "dictionary.sh: no dictionary for '$src' at $base" >&2
+		echo "See https://github.com/wooorm/dictionaries for the languages it has, or put any" >&2
+		echo "Hunspell .dic/.aff pair in $dest yourself." >&2
 		exit 1
-	}
-	mv "$dest/$dict.$ext.part" "$dest/$dict.$ext"
+	fi
+	mv "$dest/$name.$ext.part" "$dest/$name.$ext"
 done
 # A .dic file opens with its entry count, sometimes behind a byte-order mark.
-entries=$(head -n 1 "$dest/$dict.dic" | tr -cd '0-9')
+# Anything else is an error page saved under a dictionary's name, and Vale
+# would then call every word in the language a misspelling.
+entries=$(head -n 1 "$dest/$name.dic" | tr -cd '0-9')
 [ -n "$entries" ] || {
-	echo "dictionary.sh: $dest/$dict.dic does not look like a Hunspell dictionary" >&2
+	rm -f "$dest/$name.dic" "$dest/$name.aff"
+	echo "dictionary.sh: what $base served is not a Hunspell dictionary; nothing installed" >&2
 	exit 1
 }
-curl -fsSL -o "$dest/README_$dict.txt" "$base/README_$dict.txt" 2>/dev/null ||
-	rm -f "$dest/README_$dict.txt"
+curl -fsSL -o "$dest/$name.license.txt" "$base/license" 2>/dev/null || rm -f "$dest/$name.license.txt"
 
-echo "Installed $dict.dic and $dict.aff in $dest ($entries entries)"
-[ -f "$dest/README_$dict.txt" ] && echo "Licence and credits: $dest/README_$dict.txt"
-echo "Next: a spelling rule that names it, and Vale.Spelling = NO. See the vocab skill."
+echo "Installed $name.dic and $name.aff in $dest ($entries entries)"
+[ -f "$dest/$name.license.txt" ] && echo "Licence: $dest/$name.license.txt"
+case "$name" in
+en_*) echo "Next: a spelling rule that names $name, and Vale.Spelling = NO. See the vocab skill." ;;
+*) echo "Next: Lang = $src on the section for those files. Vale.Spelling then uses this dictionary." ;;
+esac

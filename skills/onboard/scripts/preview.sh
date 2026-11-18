@@ -10,11 +10,20 @@
 # overrides, to see the baseline before anyone commits to it.
 #
 #   preview.sh [-p Package]... [-a accept.txt] [-o overrides.ini] [-s styledir] [-i scopes] path...
+#   preview.sh -k [options] path...          the comments in source code
+#   preview.sh -l fr [-d dictdir] path...    prose in another language
 #   preview.sh -r path...
 #
 #   -p  style package to try (default: Microsoft). Repeat it to compare
 #       packages. The package and the style it installs must share a name,
-#       which holds for the common ones.
+#       which holds for the common ones. `-p Vale` is the built-in rules
+#       alone -- spelling and repetition -- and is the default with -k or -l,
+#       since the style packages are written for English prose.
+#   -k  lint source files instead of prose: Vale reads their comments, using
+#       the tree-sitter grammar `vale sync` installs for each language found
+#   -l  the language the files are written in, as Lang takes it (fr, de,
+#       pt-BR). Without a dictionary for it, spell check skips the files.
+#   -d  directory of Hunspell .dic/.aff files to spell check with
 #   -a  file of vocabulary terms, one per line, to accept
 #   -o  file of per-rule overrides (`Style.Rule = NO`), appended to the section
 #   -s  directory of the project's own rules, enabled under its own name
@@ -29,7 +38,7 @@
 # runs under Git Bash, like the edit hook.
 set -u
 
-usage='usage: preview.sh [-p Package]... [-a accept.txt] [-o overrides.ini] [-s styledir] [-i scopes] path...
+usage='usage: preview.sh [-p Package]... [-k] [-l lang] [-d dictdir] [-a accept.txt] [-o overrides.ini] [-s styledir] [-i scopes] path...
        preview.sh -r path...'
 pkgs=''
 accept=''
@@ -37,7 +46,10 @@ over=''
 house=''
 scopes=''
 real=0
-while getopts p:a:o:s:i:r opt; do
+code=0
+lang=''
+dicts=''
+while getopts p:a:o:s:i:rkl:d: opt; do
 	case "$opt" in
 	p) pkgs="$pkgs $OPTARG" ;;
 	a) accept=$OPTARG ;;
@@ -45,16 +57,22 @@ while getopts p:a:o:s:i:r opt; do
 	s) house=${OPTARG%/} ;;
 	i) scopes=$OPTARG ;;
 	r) real=1 ;;
+	k) code=1 ;;
+	l) lang=$OPTARG ;;
+	d) dicts=${OPTARG%/} ;;
 	*) echo "$usage" >&2; exit 2 ;;
 	esac
 done
 shift $((OPTIND - 1))
 [ $# -gt 0 ] || { echo "preview.sh: give at least one path to lint" >&2; echo "$usage" >&2; exit 2; }
-if [ "$real" -eq 1 ] && [ -n "$pkgs$accept$over$house$scopes" ]; then
+if [ "$real" -eq 1 ] && [ -n "$pkgs$accept$over$house$scopes$lang$dicts" ]; then
 	echo "preview.sh: -r reads the repository's configuration and takes no other options" >&2
 	exit 2
 fi
-[ -n "$pkgs" ] || pkgs=Microsoft
+if [ -z "$pkgs" ]; then
+	if [ "$code" -eq 1 ] || [ -n "$lang" ]; then pkgs=Vale; else pkgs=Microsoft; fi
+fi
+[ -z "$dicts" ] || [ -d "$dicts" ] || { echo "preview.sh: no such directory: $dicts" >&2; exit 2; }
 # shellcheck disable=SC2086
 set_count() { echo $#; }
 npkg=$(set_count $pkgs)
@@ -89,11 +107,16 @@ esc=$(printf '\033')
 
 # The formats actually present decide the section glob. A section that matches
 # nothing lints nothing, and Vale does not warn about it.
-exts=$(find "$@" -type f \( -name '*.md' -o -name '*.mdx' -o -name '*.markdown' \
-	-o -name '*.adoc' -o -name '*.rst' -o -name '*.org' -o -name '*.txt' \) \
-	-not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/vendor/*' 2>/dev/null |
-	sed 's/.*\.//' | sort | uniq -c | sort -rn)
-[ -n "$exts" ] || { echo "preview.sh: no prose files (md, mdx, adoc, rst, org, txt) under: $*" >&2; exit 2; }
+prose='md mdx markdown adoc rst org txt'
+source='go py js jsx mjs cjs ts tsx mts cts java kt kts rs rb c h cpp cc hpp cs swift scala php lua ex exs hs jl css scss sass less proto sh'
+if [ "$code" -eq 1 ]; then want=$source; kind=source; else want=$prose; kind=prose; fi
+exts=$(find "$@" -type f \
+	-not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/vendor/*' \
+	-not -path '*/dist/*' -not -path '*/build/*' -not -path '*/target/*' -not -path '*/.venv/*' 2>/dev/null |
+	sed -n 's/.*\.\([A-Za-z0-9]*\)$/\1/p' |
+	awk -v want="$want" 'BEGIN { n = split(want, w, " "); for (i = 1; i <= n; i++) ok[w[i]] = 1 } ok[$0]' |
+	sort | uniq -c | sort -rn)
+[ -n "$exts" ] || { echo "preview.sh: no $kind files under: $*" >&2; exit 2; }
 list=$(printf '%s\n' "$exts" | awk '{ printf "%s%s", (NR > 1 ? "," : ""), $2 }')
 case "$list" in
 *,*) glob="*.{$list}" ;;
@@ -110,18 +133,27 @@ lint() {
 	{
 		echo "StylesPath = $dir/styles"
 		echo "MinAlertLevel = suggestion"
-		echo "Packages = $pkg"
+		[ "$pkg" = Vale ] || echo "Packages = $pkg"
+		[ -z "$lang" ] || echo "Lang = $lang"
 		[ -z "$accept" ] || echo "Vocab = Preview"
 		# Setting IgnoredScopes replaces Vale's defaults, so they are restated.
 		[ -z "$scopes" ] || echo "IgnoredScopes = code, tt, kbd, samp, $scopes"
 		echo
 		echo "[$glob]"
-		echo "BasedOnStyles = Vale, $pkg${hname:+, $hname}"
+		if [ "$pkg" = Vale ]; then
+			echo "BasedOnStyles = Vale${hname:+, $hname}"
+		else
+			echo "BasedOnStyles = Vale, $pkg${hname:+, $hname}"
+		fi
 		[ -z "$over" ] || { echo; cat "$over"; }
 	} >"$dir/.vale.ini"
 	if [ -n "$accept" ]; then
 		mkdir -p "$dir/styles/config/vocabularies/Preview"
 		cp "$accept" "$dir/styles/config/vocabularies/Preview/accept.txt"
+	fi
+	if [ -n "$dicts" ]; then
+		mkdir -p "$dir/styles/config/dictionaries"
+		cp "$dicts"/*.dic "$dicts"/*.aff "$dir/styles/config/dictionaries/" 2>/dev/null
 	fi
 	if [ -n "$house" ]; then
 		mkdir -p "$dir/styles/$hname"
@@ -172,8 +204,13 @@ else
 	pkg=${pkgs# }
 	lint "$pkg" "$@" || exit 2
 	out=$work/$pkg.tsv
-	echo "Package:  $pkg"
+	if [ "$pkg" = Vale ]; then echo "Package:  none (Vale's built-in rules)"; else echo "Package:  $pkg"; fi
 	echo "Section:  [$glob]"
+	[ -z "$lang" ] || echo "Language: $lang"
+	# Vale says so on stderr when it has no dictionary for the language, and
+	# then spell check finds nothing: worth repeating where it will be read.
+	grep -q 'no dictionary' "$work/$pkg/err.log" 2>/dev/null &&
+		echo "Spelling: skipped -- no dictionary for '$lang'; pass one with -d"
 fi
 echo "Files:    $files"
 [ -z "$accept" ] || echo "Vocab:    $(grep -c . "$accept") terms accepted"

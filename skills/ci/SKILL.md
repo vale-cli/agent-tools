@@ -61,7 +61,9 @@ review comments rather than check annotations, set
 `reporter: github-pr-review`.
 
 AsciiDoc and reStructuredText need their parser installed in the job first
-(`asciidoctor`, `docutils`). Use a release tag for the action, not a branch
+(`asciidoctor`, `docutils`). If the config lints source code or another
+language, `files:` has to include those paths, and the job's `vale sync`
+fetches the grammars and models itself — they are not committed. Use a release tag for the action, not a branch
 name: a branch moves without notice. If the repository already has a Vale
 job, update that one — an old `errata-ai/vale-action@v1` step is the same
 action under its previous name. Keep its `files:` path. "Only added lines"

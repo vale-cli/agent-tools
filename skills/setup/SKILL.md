@@ -91,12 +91,17 @@ same directory and are source:
 ```gitignore
 styles/*
 !styles/config/
+styles/config/grammars/
+styles/config/models/
 !styles/<Project>/
 ```
 
-`styles/config/` holds the vocabularies, and `styles/<Project>/` is where the
-project's own rules go — see `tune`. Ignoring `styles/` outright
-silently drops both from every commit.
+`styles/config/` holds the vocabularies and dictionaries, and
+`styles/<Project>/` is where the project's own rules go — see `tune`.
+Ignoring `styles/` outright silently drops them from every commit. The two
+lines in the middle matter once the config covers source code or another
+language: `vale sync` downloads tree-sitter grammars and language models into
+`config/`, megabytes each, and they are build output like the packages.
 
 **6. `vale sync`, then lint one file** to confirm the setup resolves.
 
@@ -113,6 +118,66 @@ First run:   docs/ → 0 errors, 214 warnings, 1,988 suggestions
 A large corpus commonly produces thousands of suggestions on day one. Say the
 number, and offer `triage`. Do not quietly raise `MinAlertLevel` to make
 it look smaller.
+
+## More than English prose
+
+Two things a first config usually leaves out. Add either when the repository
+has it; both are a section each.
+
+### Docs in more than one language
+
+Translated docs under `docs/fr/`, `i18n/de/`, `content/ja/` should not be read
+as English: every word fails spell check and the English style rules mean
+nothing. Give each language a section, **after** the general one so it wins:
+
+```ini
+[*.md]
+BasedOnStyles = Vale, Microsoft
+
+[docs/fr/**/*.md]
+Lang = fr
+BasedOnStyles = Vale
+```
+
+- `Lang` takes the language as a tag: `fr`, `de`, `pt-BR`. `vale sync` then
+  installs a sentence and tagging model for French, German and Spanish; other
+  languages are read by punctuation.
+- `BasedOnStyles = Vale` drops the English style package for those files. Add
+  the project's own style back only if its rules make sense in that language.
+- Spell check needs that language's dictionary, which Vale does not carry.
+  Without one it skips the files and says so. `vocab` has the script that
+  installs one.
+
+If there is no dictionary to be had, or the team does not want translations
+checked, leave them out of the linted paths rather than linting them as
+English.
+
+### Comments in source code
+
+Vale reads the comments in Go, Python, JavaScript, TypeScript, Java, Rust and
+about twenty other languages, using a tree-sitter grammar per language so a
+`//` inside a string is not mistaken for one. A section naming the extensions
+is all it takes; `vale sync` installs the grammars the sections imply.
+
+```ini
+[*.{go,py}]
+BasedOnStyles = Vale
+
+# Comments are full of identifiers; advisory until the vocabulary catches up.
+Vale.Spelling = warning
+```
+
+- Start with `Vale` alone. The prose style packages are written for
+  documentation and are noisy on comments. The `Comments` package covers
+  comment conventions — owned TODOs, commented-out code, doc-comment form.
+- Expect identifiers. On one 280-file Go codebase the first run was 567
+  spelling alerts in under two seconds, nearly all names: `ctx`, `argv`,
+  tool names. That is why spelling starts at `warning` here. Real names go in
+  the vocabulary; an identifier mentioned in a comment belongs in backticks,
+  which Vale skips.
+- This is opt-in. Do not add a code section to a docs setup unasked; offer it.
+
+The languages and their extensions: <https://docs.vale.sh/formats/code.md>.
 
 ## Do not
 

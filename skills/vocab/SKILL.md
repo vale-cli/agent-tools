@@ -102,14 +102,15 @@ Leaning: American. The built-in dictionary is fine; en_US would enforce it.
 A clear lean with a handful of strays is the case for enforcing: those strays
 are the inconsistency. Mixed means ask. No lean means leave it alone.
 
-**2. Install the dictionary** — `en_GB`, `en_AU`, `en_CA`, `en_ZA` or `en_US`:
+**2. Install the dictionary** — `en_GB`, `en_AU`, `en_CA`, `en_ZA` or `en_US`
+(the built-in dictionary is not `en_US`: it accepts both):
 
 ```bash
 sh ${CLAUDE_SKILL_DIR}/scripts/dictionary.sh en_GB
 ```
 
 It puts the Hunspell files in `<StylesPath>/config/dictionaries/`, which is
-source: commit them, with the readme that carries their licence.
+source: commit them, with the licence file saved beside them.
 
 **3. Add a spelling rule that names it.** Copy `tune`'s
 `house/SpellingRegional.yml` to `styles/<Project>/Spelling.yml`, set its
@@ -127,10 +128,24 @@ one docs set, unknown terms went from 11 to 84 on switching. Run step 1 of the
 workflow again and accept the real ones. Say this cost before switching, not
 after.
 
-For a language other than English, set `Lang` and supply that language's
-dictionary: <https://docs.vale.sh/keys/lang.md>. Any Hunspell `.dic`/`.aff`
-pair in `config/dictionaries/` works; the script only fetches the English
-ones.
+### Another language
+
+For docs in French, German or any other language, the dictionary is what
+makes spell check work at all. Vale carries none, and skips files in a
+language it has no dictionary for. Name the language as `Lang` does:
+
+```bash
+sh ${CLAUDE_SKILL_DIR}/scripts/dictionary.sh fr
+```
+
+No spelling rule is needed this time: `Vale.Spelling` uses the dictionary for
+whatever `Lang` the section sets. `setup` has the section. The script draws on
+a collection of about ninety languages; it has none for Japanese or Chinese,
+which Hunspell does not suit. Any Hunspell `.dic`/`.aff` pair placed in
+`config/dictionaries/` works the same way.
+
+Each language's names and jargon still need accepting. One vocabulary serves
+every language in the project.
 
 `${CLAUDE_SKILL_DIR}` is the directory this file is in; if it reaches you as
 literal text, use that path.

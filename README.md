@@ -85,13 +85,13 @@ the task fits — or call them directly.
 | | | |
 |---|---|---|
 | `/vale:onboard` | "set up vale end to end" | Previews the whole baseline in a temp directory — package, vocabulary, a decision per noisy rule, CI — shows it with before/after counts, and applies it on one yes. |
-| `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. |
+| `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. Covers translated docs and the comments in source code. |
 | `/vale:tune` | "use title case headings" | Changes one style choice in plain words — headings, contractions, "we", preferred terms — and writes it into the config with its reason. Ships tested templates for the choices no package covers. |
 | `/vale:from-guide` | "enforce our style guide" | Turns a written style guide into the project's own rules, each linked to its section and tested against the guide's own do and don't examples. Says which statements cannot be checked. |
 | `/vale:write-guide` | "document our vale rules" | Writes a readable style guide from the config — what blocks, the style choices and why, the vocabulary — in Markdown, MDX, AsciiDoc, reStructuredText, Org or HTML. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
-| `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. Tells you whether the docs lean American or British, and sets up a regional dictionary if you want one enforced. |
+| `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. Tells you whether the docs lean American or British, sets up a regional dictionary if you want one enforced, and installs dictionaries for other languages. |
 | `/vale:ci` | "run this on PRs" | Wires Vale into GitHub Actions, pre-commit, or another runner — and says whether it blocks. |
 
 `onboard` ships a small script, `skills/onboard/scripts/preview.sh`, that you
@@ -111,7 +111,9 @@ than improvising around it.
 `hooks/vale-edit.sh` runs every time **the assistant** writes or edits a file —
 not when you do. If that file is prose and the repository has a resolvable Vale
 config, it lints that one file and hands the alerts straight back for fixing,
-in the same turn.
+in the same turn. Source files count too, when your config has a section for
+them: Vale reads their comments, so a typo in a doc comment is caught the same
+way.
 
 It is silent in every other case — no Vale binary, no `jq`, no config, a file
 Vale doesn't lint, or a clean run.

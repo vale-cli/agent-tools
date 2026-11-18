@@ -58,6 +58,11 @@ package that will not sync — say so and propose on a sample.
   boilerplate. Otherwise: `docs/`, `content/`, `website/docs/`, root `*.md`.
   Give Vale the docs directory, never the repository root: it does not skip
   `node_modules` or vendored trees on its own.
+- Look for what is not English prose, because both change the config:
+  translated docs in locale-named directories (`docs/fr/`, `i18n/de/`), and
+  whether the user asked about code comments. `setup` has the section for
+  each. Translations get their own section so they are not read as English.
+  Code comments are opt-in: mention them in the proposal, do not add them.
 - Note what is already there: a CI workflow, a pre-commit config, a written
   style guide, and leftovers from an older Vale setup such as a script that
   downloads styles by hand. Leftovers go in the report, not in the bin.
@@ -80,6 +85,10 @@ error-level rule and the busiest of the rest, and each term spell check does
 not know with where it first appears. If the user named a package, go straight
 to the second. Otherwise compare Microsoft and Google and take the quieter one
 as the default.
+
+For translated docs or source code, the same script previews those too —
+`-l fr <path>` for a language, `-k <path>` for comments — with Vale's built-in
+rules alone, since the style packages are written for English prose.
 
 **3. Draft the baseline, still in temp files.** Four things, each a few
 minutes at most.
@@ -146,6 +155,10 @@ Style choices — from how the docs are written today; change any
 
 Other overrides: 1
   Microsoft.Quotes = warning     9 hits, right rule; not blocking yet
+Also here:   docs/fr/ (38 files) gets its own section, so French is not read
+             as English. Spell check there needs a French dictionary — say
+             so and I'll add it.
+             212 .go files: comments are not linted. Say so to add them.
 CI:          update .github/workflows/main.yml — advisory, and only on lines
              a pull request adds, so the backlog never lands on anyone
 Still errors: 5 — the inconsistent spellings above. Real findings; I'd leave

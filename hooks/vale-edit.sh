@@ -38,8 +38,15 @@ case "$file" in
 esac
 [ -n "$file" ] && [ -f "$file" ] || exit 0
 
+# Prose formats, and the source languages whose comments Vale reads. A
+# source file is only ever linted if the project's configuration has a
+# section matching it; otherwise Vale reports nothing and the hook stays
+# silent, so listing them here costs a repository without one nothing.
 case "$file" in
 *.md | *.mdx | *.markdown | *.adoc | *.rst | *.org | *.txt) ;;
+*.go | *.py | *.js | *.jsx | *.mjs | *.cjs | *.ts | *.tsx | *.mts | *.cts) ;;
+*.java | *.kt | *.kts | *.rs | *.rb | *.c | *.h | *.cpp | *.cc | *.hpp | *.cs) ;;
+*.swift | *.scala | *.php | *.lua | *.ex | *.exs | *.hs | *.jl | *.proto) ;;
 *) exit 0 ;;
 esac
 
