@@ -89,6 +89,11 @@ minutes at most.
   prose. Do not accept them and never "fix" them. Leave the fields unlinted
   with `-i text.frontmatter.id,text.frontmatter.slug`; `vocab` has the config
   line this becomes.
+- *Which English.* `vocab`'s `scripts/dictionary.sh -d <path>` counts
+  American and British spellings in a second. Put the result in the proposal
+  as a style choice. Do not install a regional dictionary during onboarding:
+  it multiplies unknown terms. Offer it as a follow-up when the lean is clear
+  and there are strays.
 - *Vocabulary.* `Vale.Spelling` is error-level and usually the largest source
   of first-run errors, nearly all of them names. Put the real terms in a
   scratch `accept.txt`. Leave out anything that looks like a typo or an
@@ -135,6 +140,7 @@ Style choices — from how the docs are written today; change any
   Headings       sentence case   12 hits, 8 of them product names I've accepted
   "We"           allowed         52 uses; the docs speak as "we" throughout
   Contractions   advice only     8 hits; was blocking
+  Spelling       American        79 American, 1 British ("centre"); not enforced
   "e.g."         spell out       4 hits; shown in review, not blocking
   Terms          VS Code, IntelliJ   5 inconsistent spellings get a fix
 

@@ -40,8 +40,18 @@ sh ${CLAUDE_SKILL_DIR}/scripts/install.sh
   running with `-p`. Until a new shell starts, call Vale by the full path the
   script printed.
 
-- Windows: `choco install vale`, `scoop install vale`, or
-  `winget install -e --id errata-ai.Vale`.
+- Windows: `scripts/install.ps1`, beside this file. It does the same job:
+  winget, Scoop or Chocolatey if one is installed, otherwise the verified
+  release zip into `%LOCALAPPDATA%\Programs\vale`. `-AddToPath` adds that
+  directory to the user's `PATH`; the same rule about asking applies.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}\scripts\install.ps1"
+```
+
+  The other scripts in these skills are POSIX shell and need Git Bash on
+  Windows, which Git for Windows installs. If `sh` is not available, say so
+  and do their steps by hand with `vale` directly; do not skip them.
 
 `${CLAUDE_SKILL_DIR}` is the directory this file is in; if it reaches you as
 literal text, use that path. Other routes, including pinning Vale's version in

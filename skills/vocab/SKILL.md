@@ -1,6 +1,7 @@
 ---
 name: vocab
-description: Add project terms to a Vale vocabulary so spell check accepts them. Use when the user says "vale doesn't know our product name", "stop flagging this word", or spelling alerts are firing on correct terms.
+description: Add project terms to a Vale vocabulary so spell check accepts them, and set up a regional dictionary when the team wants British, Australian, Canadian or American spelling enforced. Use when the user says "vale doesn't know our product name", "stop flagging this word", "we write in British English", "flag American spellings", or spelling alerts are firing on correct terms.
+allowed-tools: Bash(sh ${CLAUDE_SKILL_DIR}/scripts/dictionary.sh -d *)
 ---
 
 # Teach Vale a project's own words
@@ -80,11 +81,67 @@ git check-ignore -v styles/config/vocabularies/<Project>/accept.txt
 Any output means a `.gitignore` rule is covering it. Narrow that rule to
 `styles/*` with `!styles/config/` rather than forcing the file in.
 
+## Dictionaries: which English
+
+Vale's built-in dictionary accepts both "color" and "colour". A project gets
+no noise from either spelling, and no help keeping to one. If the team wants
+one enforced, that takes a regional dictionary.
+
+**1. See which way the docs lean**, before asking anyone:
+
+```bash
+sh ${CLAUDE_SKILL_DIR}/scripts/dictionary.sh -d <path>
+```
+
+```
+American spellings: 79   organization (42), color (9), center (4), program (3)
+British spellings:  1   centre (1)
+Leaning: American. The built-in dictionary is fine; en_US would enforce it.
+```
+
+A clear lean with a handful of strays is the case for enforcing: those strays
+are the inconsistency. Mixed means ask. No lean means leave it alone.
+
+**2. Install the dictionary** — `en_GB`, `en_AU`, `en_CA`, `en_ZA` or `en_US`:
+
+```bash
+sh ${CLAUDE_SKILL_DIR}/scripts/dictionary.sh en_GB
+```
+
+It puts the Hunspell files in `<StylesPath>/config/dictionaries/`, which is
+source: commit them, with the readme that carries their licence.
+
+**3. Add a spelling rule that names it.** Copy `tune`'s
+`house/SpellingRegional.yml` to `styles/<Project>/Spelling.yml`, set its
+`dictionaries` entry, add `<Project>` to `BasedOnStyles`, and switch the
+built-in rule off so a typo is not reported twice:
+
+```ini
+# British English throughout.
+Vale.Spelling = NO
+```
+
+**4. Expect the vocabulary to grow.** A regional dictionary is a general one;
+it does not know "plugin", "config" or "linted" as the built-in one does. On
+one docs set, unknown terms went from 11 to 84 on switching. Run step 1 of the
+workflow again and accept the real ones. Say this cost before switching, not
+after.
+
+For a language other than English, set `Lang` and supply that language's
+dictionary: <https://docs.vale.sh/keys/lang.md>. Any Hunspell `.dic`/`.aff`
+pair in `config/dictionaries/` works; the script only fetches the English
+ones.
+
+`${CLAUDE_SKILL_DIR}` is the directory this file is in; if it reaches you as
+literal text, use that path.
+
 ## Do not
 
 - **Do not disable `Vale.Spelling`.** One unknown product name is not a reason
   to stop checking the repository.
 - **Do not add a misspelling to `accept.txt`** to clear an alert. If the term is
   wrong, fix the prose.
+- **Do not switch dictionaries to quiet spell check.** A regional dictionary
+  is stricter, not looser.
 - **Do not bulk-add every flagged token.** Read the list first; some of them
   are genuine typos, and that is the point of the rule.

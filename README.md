@@ -20,7 +20,8 @@ drafts a vocabulary and a decision for each noisy rule, and shows you one
 proposal — what it found, the before and after counts, the CI job. Nothing is
 written until you say yes. If Vale itself is missing, it installs it: through
 Homebrew, pacman or snap where one is available, otherwise the release binary,
-checksum-verified, into a directory already on your `PATH`.
+checksum-verified, into a directory already on your `PATH`. On Windows a
+PowerShell installer does the same with winget, Scoop or Chocolatey.
 
 The two read-only scripts the skills run — the preview and the rule inventory
 — are pre-approved in the skills' own frontmatter, so Claude Code does not
@@ -90,7 +91,7 @@ the task fits — or call them directly.
 | `/vale:write-guide` | "document our vale rules" | Writes a readable style guide from the config — what blocks, the style choices and why, the vocabulary — in Markdown, MDX, AsciiDoc, reStructuredText, Org or HTML. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
-| `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. |
+| `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. Tells you whether the docs lean American or British, and sets up a regional dictionary if you want one enforced. |
 | `/vale:ci` | "run this on PRs" | Wires Vale into GitHub Actions, pre-commit, or another runner — and says whether it blocks. |
 
 `onboard` ships a small script, `skills/onboard/scripts/preview.sh`, that you
@@ -201,9 +202,13 @@ CMS is.
   ([installation](https://docs.vale.sh/topics/installation)).
 - **The hook** needs `vale` and `jq`, plus any POSIX shell. It is plain `sh`,
   verified against `sh`, `bash`, `zsh`, and `dash`.
-- **Windows** works, but the hook needs Git Bash installed. Without it Claude
-  Code falls back to PowerShell, which cannot run a shell script, and the hook
-  does nothing. The skills and the MCP server are unaffected.
+- **Windows** works, with Git Bash installed (Git for Windows includes it).
+  The hook and the skills' helper scripts — preview, inventory, dictionary —
+  are POSIX shell; without Git Bash Claude Code falls back to PowerShell,
+  which cannot run them, so the hook does nothing and the skills do those
+  steps by hand. Installing Vale itself needs no shell: `setup` ships a
+  PowerShell installer that uses winget, Scoop or Chocolatey, or the release
+  zip. The MCP server is unaffected.
 
 Each part is independent, and a missing piece degrades quietly rather than
 breaking the others.

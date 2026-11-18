@@ -55,7 +55,7 @@ names are the rule names.
 
 ## Choices that need the project's own rule
 
-Three options are the opposite of what the packages check, or something no
+Four options are the opposite of what the packages check, or something no
 package can know. Each has a template in `house/`, beside this file, with its
 test cases already in it:
 
@@ -64,6 +64,7 @@ test cases already in it:
 | Title-case headings (Chicago or AP) | `house/HeadingsTitle.yml` | `<Package>.Headings = NO` |
 | Avoid contractions | `house/NoContractions.yml` | `<Package>.Contractions = NO` |
 | Preferred terms ("VS Code, not VSCode") | `house/Terms.yml` | — |
+| One regional spelling (British, Australian, …) | `house/SpellingRegional.yml` | `Vale.Spelling = NO`, and the dictionary — see `vocab` |
 
 To use one:
 
@@ -85,7 +86,7 @@ vale test --coverage styles/<Project>
 Name the directory. Without it, `--coverage` also counts every rule in the
 synced package as untested and fails.
 
-Anything beyond these three is a new rule, not a tweak. Say so rather than
+Anything beyond these four is a new rule, not a tweak. Say so rather than
 improvising YAML.
 
 ## Company vocabulary

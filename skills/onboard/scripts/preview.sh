@@ -25,7 +25,8 @@
 #       preview. Takes no other options.
 #
 # POSIX sh and POSIX tools only, plus vale. No jq: this is the first thing a
-# new user runs, and it should not fail on a missing dependency.
+# new user runs, and it should not fail on a missing dependency. On Windows it
+# runs under Git Bash, like the edit hook.
 set -u
 
 usage='usage: preview.sh [-p Package]... [-a accept.txt] [-o overrides.ini] [-s styledir] [-i scopes] path...
@@ -77,6 +78,13 @@ hname=''
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/vale-preview.XXXXXX") || exit 2
 trap 'rm -rf "$work"' EXIT INT TERM
+# Under Git Bash, /tmp is a path only the shell understands. vale.exe reads
+# StylesPath from the config file, where nothing translates it, so the
+# directory is named the Windows way from the start.
+if command -v cygpath >/dev/null 2>&1; then
+	work=$(cygpath -m "$work")
+	tmpl=$(cygpath -m "$tmpl")
+fi
 esc=$(printf '\033')
 
 # The formats actually present decide the section glob. A section that matches
@@ -124,11 +132,13 @@ lint() {
 		sed "s/$esc\[[0-9;]*m//g" "$dir/sync.log" | grep -v '^[[:space:]]*$' | tail -n 3 >&2
 		return 1
 	fi
-	if ! vale --no-global --no-exit --config="$dir/.vale.ini" --output="$tmpl" "$@" >"$work/$pkg.tsv" 2>"$dir/err.log"; then
+	if ! vale --no-global --no-exit --config="$dir/.vale.ini" --output="$tmpl" "$@" >"$dir/raw.tsv" 2>"$dir/err.log"; then
 		echo "preview.sh: vale could not run with '$pkg':" >&2
 		sed "s/$esc\[[0-9;]*m//g" "$dir/err.log" | grep -v '^[[:space:]]*$' | tail -n 3 >&2
 		return 1
 	fi
+	# vale.exe writes CRLF when the template was checked out that way.
+	tr -d '\r' <"$dir/raw.tsv" >"$work/$pkg.tsv"
 }
 
 # Several packages: one row each, so the choice comes with numbers.
@@ -151,11 +161,12 @@ fi
 
 if [ "$real" -eq 1 ]; then
 	out=$work/real.tsv
-	if ! vale --no-exit --output="$tmpl" "$@" >"$out" 2>"$work/err.log"; then
+	if ! vale --no-exit --output="$tmpl" "$@" >"$work/raw.tsv" 2>"$work/err.log"; then
 		echo "preview.sh: vale could not run with the repository's configuration:" >&2
 		sed "s/$esc\[[0-9;]*m//g" "$work/err.log" | grep -v '^[[:space:]]*$' | tail -n 3 >&2
 		exit 2
 	fi
+	tr -d '\r' <"$work/raw.tsv" >"$out"
 	echo "Config:   the repository's own"
 else
 	pkg=${pkgs# }
