@@ -25,8 +25,8 @@ it, it doesn't bundle it. `jq` too, if you want the hook.
 
 Three separate things install, and they're verified three different ways.
 
-**The skills.** Type `/vale:` and five completions should appear — `setup`,
-`fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
+**The skills.** Type `/vale:` and six completions should appear — `onboard`,
+`setup`, `fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
 
 **The hook.** This is the one that surprises people: it runs on *Claude's*
 edits, not yours. Editing a file in your own editor does nothing. To see it,
@@ -55,6 +55,7 @@ the task fits — or call them directly.
 
 | | | |
 |---|---|---|
+| `/vale:onboard` | "set up vale end to end" | Runs setup, vocabulary, triage and CI in order, asking its questions once, and ends with a committed baseline and a before/after count. |
 | `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |

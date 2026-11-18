@@ -39,7 +39,7 @@ severity, and the ten rules responsible for the most. A team that hears
 |---|---|---|
 | **Fix** | few hits, rule is right | nothing in the config; do it now, or hand to `fix` |
 | **Keep** | rule is right and already advisory | nothing; it guides new writing and blocks nothing |
-| **Downgrade** | rule is right, backlog is real, level is `error` or `warning` | one level down, *with a comment saying why* |
+| **Downgrade** | rule is right, backlog is real, level is `error` or `warning` | a lower level, *with a comment saying why* |
 | **Disable** | rule does not match how this project writes | `NO`, *with a comment saying why* |
 
 A rule already at `suggestion` cannot be downgraded — it is at the lowest

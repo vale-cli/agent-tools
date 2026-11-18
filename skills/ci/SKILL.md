@@ -32,25 +32,27 @@ whether it can stop a merge.
 ## GitHub Actions
 
 ```yaml
-- uses: vale-cli/vale-action@reviewdog
+- uses: vale-cli/vale-action@v3
   with:
     files: docs
 ```
 
 Alerts arrive as review comments on the pull request, which is where a writer
-will see them.
+will see them. Use a release tag, not a branch name: a branch moves without
+notice.
 
 ## pre-commit
 
 ```yaml
 repos:
   - repo: https://github.com/vale-cli/vale
-    rev: v3.17.0
+    rev: v3.27.0
     hooks:
       - id: vale
 ```
 
-Pin `rev` to a release. Hooks that float break at the worst time.
+Pin `rev` to a release — check <https://github.com/vale-cli/vale/releases>
+for the current one rather than copying this number. Hooks that float break at the worst time.
 
 ## Any other runner
 
