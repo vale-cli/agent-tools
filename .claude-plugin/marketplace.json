@@ -13,6 +13,11 @@
       "name": "vale",
       "source": "./",
       "description": "Onboard a repository to Vale in one prompt, tune its style choices, turn a style guide into tested rules, and keep prose linted as you edit."
+    },
+    {
+      "name": "vale-lsp",
+      "source": "./plugins/vale-lsp",
+      "description": "Vale's language server for Claude Code: alerts on prose files arrive as diagnostics after each edit. Experimental; needs the vale-ls binary on PATH."
     }
   ]
 }

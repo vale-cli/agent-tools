@@ -58,9 +58,10 @@ esac
 # script outside the plugin or overriding it for one session. The option always
 # carries its default, so without the override it is never unset.
 #
-# userConfig has no enum type, so the value is free text and is validated here:
-# anything unrecognised falls back rather than failing, because a typo in
-# someone's settings should not turn the hook into an error on every edit.
+# The plugin offers the three values as a fixed list, but VALE_HOOK_LEVEL is
+# free text and older settings may hold anything, so the value is still
+# validated here: anything unrecognised falls back rather than failing, because
+# a typo should not turn the hook into an error on every edit.
 level=${VALE_HOOK_LEVEL:-${CLAUDE_PLUGIN_OPTION_LEVEL:-error}}
 case "$level" in
 warning) keep='^(error|warning)$' ;;

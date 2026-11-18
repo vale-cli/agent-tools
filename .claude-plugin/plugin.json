@@ -20,8 +20,13 @@
     "level": {
       "type": "string",
       "title": "Alert level the edit hook reports",
-      "description": "Lowest severity handed back to Claude after it edits a prose file: \"error\", \"warning\", or \"suggestion\". Errors only by default, because warnings and suggestions are advisory by the project's own choice. Widen it for a style whose rules are deliberately advisory. An unrecognised value is treated as \"error\".",
-      "default": "error"
+      "description": "Lowest severity handed back to Claude after it edits a file Vale lints. Errors only by default, because warnings and suggestions are advisory by the project's own choice. Widen it for a style whose rules are deliberately advisory.",
+      "default": "error",
+      "options": [
+        "error",
+        "warning",
+        "suggestion"
+      ]
     }
   }
 }

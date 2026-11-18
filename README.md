@@ -53,9 +53,9 @@ The plugin drives the `vale` binary; it doesn't bundle it. `/vale:onboard` and
 
 Three separate things install, and they're verified three different ways.
 
-**The skills.** Type `/vale:` and ten completions should appear —
-`onboard`, `setup`, `tune`, `from-guide`, `write-guide`, `commits`, `fix`,
-`triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
+**The skills.** Type `/vale:` and eleven completions should appear —
+`onboard`, `setup`, `doctor`, `tune`, `from-guide`, `write-guide`, `commits`,
+`fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
 
 **The hook.** This is the one that surprises people: it runs on *Claude's*
 edits, not yours. Editing a file in your own editor does nothing. To see it,
@@ -63,8 +63,8 @@ ask Claude to change a prose file in a repository that has a working Vale
 config, and watch it get pulled up on any error-level alert before it moves on.
 
 If nothing happens, that is often correct — the hook is silent unless a file
-Vale lints has an **error**. Warnings and suggestions never appear. Check the
-setup by hand first:
+Vale lints has an **error**. Warnings and suggestions never appear. Ask for
+`/vale:doctor`, or check the setup by hand:
 
 ```bash
 vale ls-config >/dev/null && echo "config resolves"
@@ -86,6 +86,7 @@ the task fits — or call them directly.
 |---|---|---|
 | `/vale:onboard` | "set up vale end to end" | Previews the whole baseline in a temp directory — package, vocabulary, a decision per noisy rule, CI — shows it with before/after counts, and applies it on one yes. |
 | `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. Covers translated docs and the comments in source code. |
+| `/vale:doctor` | "why is the hook silent" | Checks the setup end to end — binary, config, synced styles, vocabulary, a real run — and gives the command that fixes each thing that is broken. |
 | `/vale:tune` | "use title case headings" | Changes one style choice in plain words — headings, contractions, "we", preferred terms — and writes it into the config with its reason. Ships tested templates for the choices no package covers. |
 | `/vale:from-guide` | "enforce our style guide" | Turns a written style guide into the project's own rules, each linked to its section and tested against the guide's own do and don't examples. Says which statements cannot be checked. |
 | `/vale:write-guide` | "document our vale rules" | Writes a readable style guide from the config — what blocks, the style choices and why, the vocabulary — in Markdown, MDX, AsciiDoc, reStructuredText, Org or HTML. |
@@ -135,8 +136,9 @@ reports**:
 | `warning` | errors and warnings |
 | `suggestion` | everything |
 
-Anything else is treated as `error` — the plugin config is free text, so a typo
-falls back rather than turning the hook into an error on every edit.
+The setting is a fixed list of those three. A value from an older settings
+file, or a mistyped `VALE_HOOK_LEVEL`, is treated as `error` rather than
+turning the hook into an error on every edit.
 
 To override it for one shell or outside the plugin, set `VALE_HOOK_LEVEL`,
 which wins over the plugin setting:
@@ -151,6 +153,26 @@ the output at all, and this decides what reaches Claude. Raising the level past
 
 Above `error`, each line carries its severity and the closing instruction
 changes to match — the errors get fixed, the rest is passed along as advice.
+
+### Commit messages
+
+A second hook, `hooks/vale-commit.sh`, runs after the assistant makes a commit.
+If the repository's config has a `[COMMIT_EDITMSG]` section — see
+`/vale:commits` — it lints the message git just recorded and hands back any
+error-level alerts, with the instruction to amend if the commit has not been
+pushed.
+
+A project's own `commit-msg` hook does this for people, but it is installed per
+clone, and an assistant's checkout usually has not run the project's setup.
+This gives the assistant's commits the same check. Without that section in the
+config it does nothing.
+
+### The language server, as an alternative
+
+`vale-lsp` is a second, experimental plugin in this marketplace. It connects
+Claude Code to Vale's language server, so alerts arrive as diagnostics after an
+edit with no shell involved. See [`plugins/vale-lsp`](plugins/vale-lsp). Use it
+or the edit hook, not both.
 
 ## The MCP server
 
