@@ -49,7 +49,19 @@ about things teams care about — contractions, headings, the Oxford comma. It i
 their editorial decision, not a default you pick for them. The
 <https://vale.sh/explorer> listing has the rest.
 
-**5. Add `StylesPath` to `.gitignore`.** It is build output.
+**5. Ignore the synced packages, not the whole `StylesPath`.** What `vale sync`
+downloads is build output; the project's own vocabulary and rules live in the
+same directory and are source:
+
+```gitignore
+styles/*
+!styles/config/
+!styles/<Project>/
+```
+
+`styles/config/` holds the vocabularies, and `styles/<Project>/` is where the
+project's own rules go if it ever writes any. Ignoring `styles/` outright
+silently drops both from every commit.
 
 **6. `vale sync`, then lint one file** to confirm the setup resolves.
 
@@ -59,7 +71,7 @@ their editorial decision, not a default you pick for them. The
 Vale setup summary
 ==================
 Config:      .vale.ini  ([*.md] → Vale, Microsoft)
-Styles:      styles/ (gitignored), 1 package synced
+Styles:      styles/ (synced packages gitignored), 1 package synced
 First run:   docs/ → 0 errors, 214 warnings, 1,988 suggestions
 ```
 
@@ -69,7 +81,8 @@ it look smaller.
 
 ## Do not
 
-- Do not commit the `StylesPath` directory.
+- Do not commit synced packages, and do not ignore `styles/config/` or the
+  project's own style along with them.
 - Do not pick the style package without asking.
 - Do not set `MinAlertLevel = error` to make the first run look clean. Nothing
   has been decided by hiding the output.

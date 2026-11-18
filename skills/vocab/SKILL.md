@@ -53,6 +53,14 @@ a deprecated spelling. Rejected terms are flagged wherever they appear.
 **6. Re-run** and report what is left.
 
 **7. Commit the vocabulary.** Unlike the rest of `StylesPath`, it is source.
+Check it is not ignored first:
+
+```bash
+git check-ignore -v styles/config/vocabularies/<Project>/accept.txt
+```
+
+Any output means a `.gitignore` rule is covering it. Narrow that rule to
+`styles/*` with `!styles/config/` rather than forcing the file in.
 
 ## Do not
 

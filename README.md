@@ -57,7 +57,7 @@ the task fits — or call them directly.
 |---|---|---|
 | `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
-| `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule: fix, downgrade, or switch off. |
+| `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
 | `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. |
 | `/vale:ci` | "run this on PRs" | Wires Vale into GitHub Actions, pre-commit, or another runner — and says whether it blocks. |
 
