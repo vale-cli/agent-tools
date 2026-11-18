@@ -28,6 +28,19 @@ proper noun.
 vale --output=JSON <path> | jq -r '.[][] | select(.Check == "Vale.Spelling") | .Match' | sort | uniq -c | sort -rn
 ```
 
+Look at *where* each term is before deciding what it is. A hit on the first
+lines of a file is usually front matter: `id: vscode` is a URL, not a
+misspelling, and neither the vocabulary nor the prose is the place to fix it.
+Leave those fields unlinted, at the top of `.vale.ini`, above any `[section]`:
+
+```ini
+# Page ids and slugs are URLs, not prose.
+IgnoredScopes = code, tt, kbd, samp, text.frontmatter.id, text.frontmatter.slug
+```
+
+Setting `IgnoredScopes` replaces Vale's defaults, which is why the first four
+are restated. Every front matter field has a scope named after it.
+
 **2. Create the vocabulary.** It lives inside `StylesPath` but is the one part
 of it that is yours and survives `vale sync`:
 
@@ -36,13 +49,18 @@ styles/config/vocabularies/<Project>/accept.txt
 styles/config/vocabularies/<Project>/reject.txt
 ```
 
+`<Project>` is the product or repository name in one capitalised word —
+`Acme`, `Docs`. Not `Vale`, and not the name of a package in use: both are
+styles already, and the project's own rules will share this name.
+
 **3. Name it in `.vale.ini`:**
 
 ```ini
 Vocab = <Project>
 ```
 
-**4. Add one term per line** to `accept.txt`. Entries are case-sensitive
+**4. Add one term per line** to `accept.txt`. The possessive comes free:
+accepting `Tengo` accepts `Tengo's`. Entries are case-sensitive
 regular expressions, so `Kubernetes` accepts that spelling and not
 `kubernetes` — usually what a project wants, because the casing is part of the
 name.

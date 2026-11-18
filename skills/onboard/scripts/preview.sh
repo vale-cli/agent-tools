@@ -9,7 +9,8 @@
 # compare them side by side; give one, with a proposed vocabulary and
 # overrides, to see the baseline before anyone commits to it.
 #
-#   preview.sh [-p Package]... [-a accept.txt] [-o overrides.ini] [-s styledir] path...
+#   preview.sh [-p Package]... [-a accept.txt] [-o overrides.ini] [-s styledir] [-i scopes] path...
+#   preview.sh -r path...
 #
 #   -p  style package to try (default: Microsoft). Repeat it to compare
 #       packages. The package and the style it installs must share a name,
@@ -17,27 +18,41 @@
 #   -a  file of vocabulary terms, one per line, to accept
 #   -o  file of per-rule overrides (`Style.Rule = NO`), appended to the section
 #   -s  directory of the project's own rules, enabled under its own name
+#   -i  comma-separated scopes to leave unlinted, added to Vale's defaults:
+#       `-i text.frontmatter.id` for front matter fields that are not prose
+#   -r  report on the repository's own configuration instead of a temporary
+#       one, in the same format, to check an applied baseline against its
+#       preview. Takes no other options.
 #
 # POSIX sh and POSIX tools only, plus vale. No jq: this is the first thing a
 # new user runs, and it should not fail on a missing dependency.
 set -u
 
-usage='usage: preview.sh [-p Package]... [-a accept.txt] [-o overrides.ini] [-s styledir] path...'
+usage='usage: preview.sh [-p Package]... [-a accept.txt] [-o overrides.ini] [-s styledir] [-i scopes] path...
+       preview.sh -r path...'
 pkgs=''
 accept=''
 over=''
 house=''
-while getopts p:a:o:s: opt; do
+scopes=''
+real=0
+while getopts p:a:o:s:i:r opt; do
 	case "$opt" in
 	p) pkgs="$pkgs $OPTARG" ;;
 	a) accept=$OPTARG ;;
 	o) over=$OPTARG ;;
 	s) house=${OPTARG%/} ;;
+	i) scopes=$OPTARG ;;
+	r) real=1 ;;
 	*) echo "$usage" >&2; exit 2 ;;
 	esac
 done
 shift $((OPTIND - 1))
 [ $# -gt 0 ] || { echo "preview.sh: give at least one path to lint" >&2; echo "$usage" >&2; exit 2; }
+if [ "$real" -eq 1 ] && [ -n "$pkgs$accept$over$house$scopes" ]; then
+	echo "preview.sh: -r reads the repository's configuration and takes no other options" >&2
+	exit 2
+fi
 [ -n "$pkgs" ] || pkgs=Microsoft
 # shellcheck disable=SC2086
 set_count() { echo $#; }
@@ -89,6 +104,8 @@ lint() {
 		echo "MinAlertLevel = suggestion"
 		echo "Packages = $pkg"
 		[ -z "$accept" ] || echo "Vocab = Preview"
+		# Setting IgnoredScopes replaces Vale's defaults, so they are restated.
+		[ -z "$scopes" ] || echo "IgnoredScopes = code, tt, kbd, samp, $scopes"
 		echo
 		echo "[$glob]"
 		echo "BasedOnStyles = Vale, $pkg${hname:+, $hname}"
@@ -132,16 +149,26 @@ if [ "$npkg" -gt 1 ]; then
 	exit 0
 fi
 
-pkg=${pkgs# }
-lint "$pkg" "$@" || exit 2
-out=$work/$pkg.tsv
-
-echo "Package:  $pkg"
-echo "Section:  [$glob]"
+if [ "$real" -eq 1 ]; then
+	out=$work/real.tsv
+	if ! vale --no-exit --output="$tmpl" "$@" >"$out" 2>"$work/err.log"; then
+		echo "preview.sh: vale could not run with the repository's configuration:" >&2
+		sed "s/$esc\[[0-9;]*m//g" "$work/err.log" | grep -v '^[[:space:]]*$' | tail -n 3 >&2
+		exit 2
+	fi
+	echo "Config:   the repository's own"
+else
+	pkg=${pkgs# }
+	lint "$pkg" "$@" || exit 2
+	out=$work/$pkg.tsv
+	echo "Package:  $pkg"
+	echo "Section:  [$glob]"
+fi
 echo "Files:    $files"
 [ -z "$accept" ] || echo "Vocab:    $(grep -c . "$accept") terms accepted"
 [ -z "$house" ] || echo "Own rules: $hname ($(find "$house" -maxdepth 1 -name '*.yml' | wc -l | tr -d ' ') files)"
 [ -z "$over" ] || echo "Rules:    $(grep -c '^[^#[:space:]].*=' "$over") overrides applied"
+[ -z "$scopes" ] || echo "Unlinted: $scopes"
 
 awk -F '\t' '
 	$1 ~ /^(error|warning|suggestion)$/ && NF >= 2 { n++; sev[$1]++; rule[$2]++; rsev[$2] = $1 }
@@ -152,20 +179,26 @@ awk -F '\t' '
 	}
 ' "$out"
 
-# One real alert from each of the five busiest rules. A count says how much;
-# an example says whether the rule is right for these docs.
+# One real alert from every error-level rule, then from the busiest of the
+# rest, eight at most. The error-level rules are the ones that need a
+# decision; a count says how much, an example says whether the rule is right.
 awk -F '\t' '
 	$1 ~ /^(error|warning|suggestion)$/ && NF >= 5 {
 		n[$2]++
-		if (!($2 in ex)) ex[$2] = $3 ":" $4 "  " $5
+		if (!($2 in ex)) { ex[$2] = $3 ":" $4 "  " $5; sv[$2] = $1 }
 	}
-	END { for (r in n) printf "%d\t%s\t%s\n", n[r], r, ex[r] }
-' "$out" | sort -rn | head -n 5 | awk -F '\t' '
-	NR == 1 { print "\nFrom these docs (one alert per busiest rule):" }
-	{ printf "  %s\n    %s\n", $2, $3 }
+	END { for (r in n) printf "%d\t%d\t%s\t%s\t%s\n", (sv[r] == "error" ? 0 : 1), n[r], r, sv[r], ex[r] }
+' "$out" | sort -t "$(printf '\t')" -k1,1n -k2,2rn | head -n 8 | awk -F '\t' '
+	NR == 1 { print "\nFrom these docs (one alert per rule: error-level first, then the busiest):" }
+	{ printf "  %s (%s, %d)\n    %s\n", $3, $4, $2, $5 }
 '
 
-terms=$(awk -F '\t' '$2 == "Vale.Spelling" && NF >= 6 { print $6 }' "$out" | sort | uniq -c | sort -rn)
+# Each unknown term with where it first appears. A hit in the first lines of
+# a file is usually front matter -- an id or a slug, not prose.
+terms=$(awk -F '\t' '
+	$2 == "Vale.Spelling" && NF >= 6 { n[$6]++; if (!($6 in at)) at[$6] = $3 ":" $4 }
+	END { for (t in n) printf "%6d  %-24s %s\n", n[t], t, at[t] }
+' "$out" | sort -rn)
 if [ -n "$terms" ]; then
-	printf '\nUnknown to spell check (count, term):\n%s\n' "$terms"
+	printf '\nUnknown to spell check (count, term, first seen):\n%s\n' "$terms"
 fi

@@ -22,23 +22,36 @@ working config already exists, the user probably wants `fix` or
 **1. Install** if `vale --version` fails. Do it rather than asking the user
 to, and say that you did:
 
-- Homebrew present: `brew install vale`
-- Windows: `choco install vale`
-- Otherwise, on Linux or macOS, `scripts/install.sh` beside this file. It
-  downloads the release binary into `~/.local/bin`, and refuses to install
-  one that does not match the release's published checksum:
+- Linux or macOS: `scripts/install.sh`, beside this file.
 
 ```bash
-sh <this skill's directory>/scripts/install.sh
+sh ${CLAUDE_SKILL_DIR}/scripts/install.sh
 ```
 
-Other routes are at <https://docs.vale.sh/topics/installation.md>. A missing
+  It uses Homebrew, pacman or snap when one is there and can run without a
+  password prompt, so Vale stays up to date. Otherwise it downloads the
+  release binary, refuses one that does not match the release's published
+  checksum, and puts it in a directory already on `PATH` (`~/.local/bin`,
+  `~/bin` or `/usr/local/bin`).
+
+  If none of those is on `PATH`, it installs to `~/.local/bin` and prints the
+  line the user's shell needs. Adding that line to their startup file is
+  `-p`, and it is their file: say what will be added and to which file before
+  running with `-p`. Until a new shell starts, call Vale by the full path the
+  script printed.
+
+- Windows: `choco install vale`, `scoop install vale`, or
+  `winget install -e --id errata-ai.Vale`.
+
+`${CLAUDE_SKILL_DIR}` is the directory this file is in; if it reaches you as
+literal text, use that path. Other routes, including pinning Vale's version in
+the project, are at <https://docs.vale.sh/topics/installation.md>. A missing
 binary is not a reason to stop and hand the user a to-do.
 
 **2. Find the prose.** `docs/`, `content/`, `*.md` at the root. Do not point
-Vale at the whole repository: vendored directories, changelogs and generated
-reference pages produce alerts nobody will act on, and the first run is what
-decides whether the team keeps it.
+Vale at the whole repository. It does not skip `node_modules` on its own, and
+vendored directories, changelogs and generated reference pages produce alerts
+nobody will act on. The first run is what decides whether the team keeps it.
 
 **3. Write `.vale.ini`** in the repository root:
 

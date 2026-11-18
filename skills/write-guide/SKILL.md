@@ -1,6 +1,7 @@
 ---
 name: write-guide
-description: Write a human-readable style guide from a project's Vale configuration — what the rules are, which ones block, the project's vocabulary, and why each choice was made — in Markdown, AsciiDoc or reStructuredText. Use when the user says "write up our style guide", "document our vale rules", "what does our config actually enforce", or "generate a style guide for contributors".
+description: Write a human-readable style guide from a project's Vale configuration — what the rules are, which ones block, the project's vocabulary, and why each choice was made — in Markdown, MDX, AsciiDoc, reStructuredText, Org or HTML. Use when the user says "write up our style guide", "document our vale rules", "what does our config actually enforce", or "generate a style guide for contributors".
+allowed-tools: Bash(sh ${CLAUDE_SKILL_DIR}/scripts/inventory.sh *)
 ---
 
 # Write the style guide the config already implies
@@ -31,11 +32,21 @@ after overrides, and the comment the project wrote above each override as its
 reason:
 
 ```bash
-sh <this skill's directory>/scripts/inventory.sh            # tab-separated
-sh <this skill's directory>/scripts/inventory.sh -f md      # or adoc, rst
+sh ${CLAUDE_SKILL_DIR}/scripts/inventory.sh           # tab-separated
+sh ${CLAUDE_SKILL_DIR}/scripts/inventory.sh -f md     # a table, ready to paste
 ```
 
-It needs only a POSIX shell. Use its output for every claim about what is
+| `-f` | Table written as |
+|---|---|
+| `md`, `mdx` | Markdown pipe table |
+| `adoc` | AsciiDoc table |
+| `rst` | reStructuredText `list-table` |
+| `org` | Org table |
+| `html` | HTML `<table>`, for anything else |
+| `tsv` | tab-separated, for your own use |
+
+`${CLAUDE_SKILL_DIR}` is the directory this file is in; if it reaches you as
+literal text, use that path. The script needs only a POSIX shell. Use its output for every claim about what is
 enforced and at what level. Do not describe a rule from memory of the package;
 packages change, and the project may have switched it off.
 
@@ -69,6 +80,9 @@ nothing.
 …table…
 <!-- vale-inventory:end -->
 ```
+
+   Use the comment syntax of the guide's format for the markers: `//` lines in
+   AsciiDoc, `..` in reStructuredText, `#` in Org, `{/* */}` in MDX.
 
 **3. Give examples that are true.** For the project's own rules, the test
 cases are the examples: an `input` that is flagged is the "don't", one with

@@ -64,7 +64,11 @@ AsciiDoc and reStructuredText need their parser installed in the job first
 (`asciidoctor`, `docutils`). Use a release tag for the action, not a branch
 name: a branch moves without notice. If the repository already has a Vale
 job, update that one — an old `errata-ai/vale-action@v1` step is the same
-action under its previous name.
+action under its previous name. Keep its `files:` path. "Only added lines"
+needs a pull request to compare against, so a job that runs only `on: push`
+should gain `pull_request`; say that you changed the trigger, since it is
+their workflow. The action uses the job's own `GITHUB_TOKEN` by default, so an
+explicit `env: GITHUB_TOKEN` line from an older setup can go.
 
 ## pre-commit
 
@@ -90,8 +94,10 @@ turn into annotations. `--no-global` keeps a config on the machine from
 changing the result.
 
 If the runner has no cached `StylesPath`, `vale sync` has to run first — and
-that means a style updating upstream can fail a build nobody changed. Pin
-`Packages` to a release URL rather than a moving reference.
+that means a style updating upstream can fail a build nobody changed. If that
+matters to the team, an entry in `Packages` can be the URL of a release `.zip`
+instead of a name; a name always installs the current version. Leave it as a
+name unless they ask.
 
 ## Do not
 

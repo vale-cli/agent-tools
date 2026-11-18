@@ -99,8 +99,11 @@ places:
 | "Never write the old name" | `reject.txt` — see `vocab` |
 | "Write X, not Y" | `house/Terms.yml`, so the alert says what to write instead |
 
-Accepting a term also makes Vale flag its other casings (`Vale.Terms`), so a
-name in `accept.txt` needs no pair in `Terms.yml` for casing alone.
+Accepting a term does two more things: Vale flags its other casings
+(`Vale.Terms`), so a name in `accept.txt` needs no pair in `Terms.yml` for
+casing alone; and capitalization rules stop flagging it, which is the fix when
+a heading rule objects to a product name. On one docs set, accepting three
+product names took a sentence-case rule from 12 hits to 4.
 
 ## Workflow
 
@@ -114,14 +117,18 @@ on)".
 vale --no-exit --output=line <path> | grep -c 'Microsoft.Headings'
 ```
 
-For an option that needs an own rule, `onboard`'s `scripts/preview.sh -s
-<dir>` shows the count without touching the repository. A choice that flags
+For an option that needs an own rule, the preview script in `onboard`
+(`scripts/preview.sh -s <dir>`) shows the count without touching the
+repository. A choice that flags
 three quarters of the corpus is probably the wrong one — say that. On one docs
 set, sentence case flagged 10 headings and title case 75; the corpus had
 already decided.
 
 **3. Write it**, with the reason as a comment. If the user gave no reason, ask
-for one line; "because Sam said so in #docs" is a fine reason.
+for one line; "because Sam said so in #docs" is a fine reason. During
+`onboard` there is nobody to ask yet: write what the corpus shows ("52 uses
+across the tutorials") and say in the report that these are observations for
+the team to replace with their own reasons.
 
 **4. Re-run** and confirm the count moved as expected. An override that
 changes nothing is misspelled or in the wrong section, and Vale does not warn

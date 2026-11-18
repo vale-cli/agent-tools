@@ -4,13 +4,17 @@
 #
 # Keys are case-sensitive regular expressions. Replace the examples with the
 # project's own pairs, and give each pair a test.
+#
+# Match the wrong spelling exactly, not every casing of it. Lowercase forms
+# are usually identifiers -- a page id, a package name, a URL -- and the full
+# official name ("Visual Studio Code") is not a mistake.
 extends: substitution
 message: "Use '%s' instead of '%s'."
 level: warning
 ignorecase: false
 swap:
-  'VSCode|vscode|Visual Studio Code': VS Code
-  '[Ii]ntellij': IntelliJ
+  'VSCode|Vscode': VS Code
+  'Intellij': IntelliJ
 tests:
   - name: flags a wrong spelling
     input: Open the project in VSCode.
@@ -20,4 +24,7 @@ tests:
     contains: "'IntelliJ'"
   - name: accepts the preferred terms
     input: VS Code and IntelliJ both work.
+    want: ''
+  - name: leaves lowercase identifiers alone
+    input: Install the vale-vscode package from the intellij directory.
     want: ''

@@ -1,6 +1,7 @@
 ---
 name: onboard
 description: Take a repository from no Vale to a quiet, committed baseline in one pass — config, vocabulary, a decision per noisy rule, and CI — with one proposal and one yes. Use when the user says "set up vale end to end", "onboard this repo to vale", "get us started with prose linting", or asks for setup and wants it finished rather than started.
+allowed-tools: Bash(sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh *)
 ---
 
 # Onboard a repository to Vale
@@ -10,16 +11,25 @@ description: Take a repository from no Vale to a quiet, committed baseline in on
 The repository has no working Vale config and the user wants the whole job:
 not a `.vale.ini` and two thousand alerts, but a baseline the team can keep.
 
-The details of each part belong to `setup`, `vocab`, `triage` and `ci`, and
-their "Do not" lists still apply. This skill is how to do all four without
-stopping four times. If the user wants only one of them, use that one.
+The details of each part belong to `setup`, `vocab`, `triage`, `tune` and
+`ci`. This skill is how to do all of them without stopping five times. If the
+user wants only one, use that one.
+
+**Where this skill and the others disagree, this one wins.** They each say to
+ask before choosing — the package, the overrides, whether CI blocks, the
+reason for a style choice. Here the single proposal in step 4 is that
+question, asked once with the answer you would give. Their report formats are
+likewise replaced by the one at the end. Their "Do not" lists still apply.
+
+`${CLAUDE_SKILL_DIR}` in the commands below is the directory this file is in.
+If it reaches you as literal text, use that directory's path instead.
 
 ## The shape: look, draft, one yes, apply
 
 Everything up to the proposal happens in a temp directory. Nothing in the
-repository changes until the user has seen the whole baseline — the config,
-the vocabulary, each override and its reason, the CI job, and the numbers —
-and said yes once.
+repository changes until the user has seen the whole baseline — what it found,
+the config, the vocabulary, each choice and its reason, the CI job, and the
+numbers — and said yes once.
 
 That is what makes it feel finished rather than interrogated: the user is
 asked to approve a concrete result, not to answer questions about a tool they
@@ -43,122 +53,156 @@ package that will not sync — say so and propose on a sample.
 - `vale ls-config`. If a config already resolves, this is not onboarding — say
   so and offer `triage`. If one exists and fails to load, repair it rather
   than writing a second.
-- Find the prose: `docs/`, `content/`, `website/docs/`, root `*.md`. Leave out
-  vendored, generated and changelog files.
-- Note what is already there: an existing CI workflow, a pre-commit config, a
-  written style guide.
+- Find the prose. If a CI job or script already lints a path, that path is the
+  team's answer — use it, and mention anything in it that looks like
+  boilerplate. Otherwise: `docs/`, `content/`, `website/docs/`, root `*.md`.
+  Give Vale the docs directory, never the repository root: it does not skip
+  `node_modules` or vendored trees on its own.
+- Note what is already there: a CI workflow, a pre-commit config, a written
+  style guide, and leftovers from an older Vale setup such as a script that
+  downloads styles by hand. Leftovers go in the report, not in the bin.
+- Pick the project's name, used for the vocabulary and any own rules: the
+  product or repository name in one capitalised word. Not `Vale`, and not a
+  package's name.
 
-**2. Preview the candidates.** `scripts/preview.sh`, beside this file, builds
-a throwaway config in a temp directory and prints the counts by severity and
-rule plus the terms spell check does not know. It needs only `vale`, and it
-writes nothing to the repository:
-
-```bash
-sh <this skill's directory>/scripts/preview.sh -p Microsoft -p Google <path>
-sh <this skill's directory>/scripts/preview.sh -p Microsoft <path>
-```
-
-The first form is a side-by-side count; the second is one package's rules,
-with a real alert from the user's own files for each of the busiest. If the
-user named a package, go straight to the second. Otherwise compare Microsoft
-and Google, so the choice comes with numbers instead of a shrug, and take the
-quieter one as the default.
-
-**3. Draft the baseline, still in temp files.**
-
-- *Vocabulary first.* `Vale.Spelling` is error-level and usually the largest
-  source of first-run errors, nearly all of them names. Put the real terms in
-  a scratch `accept.txt`. Leave out anything that looks like a typo or an
-  inconsistent casing — those are findings, and they belong in the report.
-- *Then overrides*, by the `triage` buckets, in a scratch file with the reason
-  as a comment above each line. A package ships some rules at `error`; each of
-  those needs a decision before CI can block on anything.
-- *Then the style choices.* The table in `tune` names the ones teams argue
-  about — heading capitalization, contractions, "we", passive voice. For each,
-  read what the corpus already does from the counts and pick that as the
-  default: a rule with 10 hits in 290 headings is the house style; one with 75
-  is not. Where the corpus does the opposite of the package, use the template
-  from `tune`'s `house/` directory in a scratch style directory.
-- *Preferred terms.* Inconsistent spellings in the spelling list ("VSCode",
-  "vscode", "Vscode") are a `Terms.yml` pair waiting to be written, not
-  vocabulary.
-- *Run the preview again* with all of it, and keep the output:
+**2. Preview the candidates.** `scripts/preview.sh` builds a throwaway config
+in a temp directory. It needs only `vale` and writes nothing to the
+repository:
 
 ```bash
-sh <this skill's directory>/scripts/preview.sh -p Microsoft -a accept.txt -o overrides.ini -s <scratch>/<Project> <path>
+sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh -p Microsoft -p Google <path>
+sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh -p Microsoft <path>
 ```
 
-**4. Propose once.** One message, in this order, short enough to read:
+The first form is a side-by-side count. The second is one package in full:
+counts by severity and rule, a real alert from the user's own files for every
+error-level rule and the busiest of the rest, and each term spell check does
+not know with where it first appears. If the user named a package, go straight
+to the second. Otherwise compare Microsoft and Google and take the quieter one
+as the default.
+
+**3. Draft the baseline, still in temp files.** Four things, each a few
+minutes at most.
+
+- *Front matter.* Look at where the unknown terms are. Hits on the first lines
+  of files are front matter — `id: vscode`, a `slug` — and those are URLs, not
+  prose. Do not accept them and never "fix" them. Leave the fields unlinted
+  with `-i text.frontmatter.id,text.frontmatter.slug`; `vocab` has the config
+  line this becomes.
+- *Vocabulary.* `Vale.Spelling` is error-level and usually the largest source
+  of first-run errors, nearly all of them names. Put the real terms in a
+  scratch `accept.txt`. Leave out anything that looks like a typo or an
+  inconsistent casing — those are findings.
+- *Overrides.* Every error-level rule needs a decision before CI can block on
+  anything; the preview's examples show one real hit of each. Use the `triage`
+  buckets, in a scratch file, with the reason as a comment above each line.
+  There is nobody to ask for reasons yet, so write what the corpus shows
+  ("52 uses across the tutorials").
+- *Style choices and preferred terms.* The table in `tune` names the choices
+  teams argue about. Take what the docs already do as the default, read from
+  the rule's count: few hits means the docs follow the rule, many means they
+  do not. An inconsistent spelling in the unknown-terms list ("VSCode" beside
+  "VS Code") is a pair for `tune`'s `Terms.yml` template, in a scratch style
+  directory. If a heading rule is flagging product names, accept the names;
+  do not switch the rule off.
+
+Then run the preview once more with all of it, and keep the output:
+
+```bash
+sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh -p Microsoft -a accept.txt -o overrides.ini \
+  -i text.frontmatter.id -s <scratch>/<Project> <path>
+```
+
+**4. Propose once.** One message, in this order:
 
 ```
 Vale baseline for docs/ (40 .md, 14 .mdx) — nothing written yet
 
               total   errors  warnings  suggestions
 First run       404       52        99          253
-With baseline   335       11        65          259
+With baseline   335        5        65          265
 
 What it found, in your files
-  docs/install.md:14      "VSCode" — you write "VS Code" 31 times elsewhere
-  docs/api/auth.md:52     "e.g.," → "for example"
-  docs/guide/start.md:8   a 46-word sentence
+  "VSCode" in creating-plugin.md:16 — elsewhere you write "VS Code"
+  "e.g.," in options/core.md:19 → "for example"
+  "Intellij" in clients/intellij.md:10 — the product is "IntelliJ"
 
 Package:     Microsoft   (Google: 571 alerts, 67 errors — say so to switch)
 Vocabulary:  12 terms    Jilles, Tengo, Linode, Buildkite, …
+Not linted:  front matter `id` and `slug` — page URLs, not prose
 
-Style choices — taken from how the docs are written today; change any
-  Headings       sentence case   10 of 290 differ (title case would flag 75)
-  "We"           allowed         47 uses; the docs speak as "we" throughout
-  Contractions   advice only     6 uncontracted; register varies by page
-  "e.g."         spell out       4 hits, shown in review, not blocking
-  Passive voice  advice only     77 hits
-  Terms          VS Code, IntelliJ   8 inconsistent spellings get a fix
+Style choices — from how the docs are written today; change any
+  Headings       sentence case   12 hits, 8 of them product names I've accepted
+  "We"           allowed         52 uses; the docs speak as "we" throughout
+  Contractions   advice only     8 hits; was blocking
+  "e.g."         spell out       4 hits; shown in review, not blocking
+  Terms          VS Code, IntelliJ   5 inconsistent spellings get a fix
 
 Other overrides: 1
-  Microsoft.Quotes = warning     right rule, 9 existing hits
+  Microsoft.Quotes = warning     9 hits, right rule; not blocking yet
 CI:          update .github/workflows/main.yml — advisory, and only on lines
              a pull request adds, so the backlog never lands on anyone
-Still errors: 11 — inconsistent spellings ("VSCode", "intellij"). Real
-              findings; I'd leave them for a follow-up fix.
+Still errors: 5 — the inconsistent spellings above. Real findings; I'd leave
+              them for a follow-up fix.
 
+The reasons in the config are what I observed, for you to replace with yours.
 Apply this? Or tell me what to change.
 ```
 
 Lead with two or three things it actually caught, picked from the preview's
 examples — a real inconsistency in a named file convinces where a count does
 not. Choose findings the team would agree are mistakes, not the busiest rule.
+Shorten long paths to the file name.
 
-Every editorial choice is in there with the default you picked and the
-evidence for it: the package, the style choices in plain words, each remaining
-override, whether CI blocks. Name the choices the way the team would — "title
-case", not `capitalization` — and keep rule names for the lines that have no
-plainer description. A "yes" accepts
-all of it; "use Google" or "keep We" changes one line and you re-preview —
-do not start over, and do not re-ask what was already accepted.
+Use only evidence the preview gave you: rule counts, examples, term
+locations. Do not go counting headings or grepping for the right spelling to
+decorate a line; a hit count is enough to justify a default.
+
+Every editorial choice is in there with the default you picked: the package,
+the style choices in plain words, each remaining override, whether CI blocks.
+Name choices the way the team would — "title case", not `capitalization` — and
+keep rule names for lines with no plainer description. A "yes" accepts all of
+it; "use Google" or "keep We" changes one line and you re-preview. Do not
+start over, and do not re-ask what was already accepted.
 
 Default CI to advisory. A job that is red on its first run teaches the team to
 ignore it.
 
+If what is left includes errors you cannot clear honestly — a false positive
+with no clean exemption — say so in "Still errors" and keep CI advisory.
+That is a better proposal than a clean number.
+
 **5. Apply**, in one go, once they say yes:
 
 - `.vale.ini`, the ignore rules and `vale sync` (`setup`)
-- the vocabulary, named in the config (`vocab`)
+- the vocabulary and any `IgnoredScopes` line, above the first `[section]`
+  (`vocab`)
 - the overrides, each with its reason (`triage`)
-- the style choices and any own rules, with `vale test --coverage styles/<Project>` passing
-  (`tune`)
+- the style choices and any own rules, with
+  `vale test --coverage styles/<Project>` passing (`tune`)
 - the CI change — update a job that already runs Vale rather than adding a
-  second (`ci`)
+  second, and say what you changed about its trigger (`ci`)
 
-**6. Verify against the preview.**
+**6. Verify against the preview.** The same script, pointed at the real
+config, prints the same report:
+
+```bash
+sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh -r <path>
+```
+
+The totals should equal the last preview's. If they do not, a section glob,
+an override or the ignored scopes is not matching; find out which before
+reporting. Then the exit code, which is what CI sees:
 
 ```bash
 vale --output=line <path> >/dev/null; echo "exit $?"
 ```
 
-The real run should match the previewed numbers. If it does not, a section
-glob or an override is not matching; find out which before reporting.
+Exit 1 is expected while errors remain, and is not a failure of the setup.
+Exit 0 means a blocking job would pass today.
 
-**7. Commit** the config, ignore rules, vocabulary and CI change together,
-following the repository's conventions. Not the synced packages.
+**7. Commit** the config, ignore rules, vocabulary, own rules and CI change
+together, following the repository's conventions. Not the synced packages.
 
 **8. Offer the editor.** One line, not a step to wait on: alerts as they type
 come from the Vale language server, which most editors can use —
@@ -166,8 +210,9 @@ come from the Vale language server, which most editors can use —
 catches it before.
 
 **9. Close with the result and one next step.** The table from the proposal,
-what was committed, the exit code, and the single most useful thing to do
-next — usually "fix the 11 remaining errors, then CI can block". Not a menu.
+what was committed, the exit code, any leftovers you noticed, and the single
+most useful thing to do next — usually "fix the 5 remaining errors, then CI
+can block". Not a menu.
 
 ## If it is interrupted
 
@@ -186,5 +231,7 @@ what is missing, saying what you skipped.
   nobody had to hide.
 - Do not edit prose during onboarding unless the user asked for it. A setup
   pull request that also rewrites forty pages will not be reviewed.
-- Do not bury the proposal in explanation. If it does not fit on one screen,
-  cut the commentary, not the overrides.
+- Do not change a front matter `id` or `slug` to satisfy spell check. It is a
+  URL.
+- Do not bury the proposal in explanation. Cut commentary before cutting a
+  choice — but an error you cannot clear is a choice, not commentary.

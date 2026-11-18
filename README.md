@@ -18,7 +18,14 @@ With the plugin installed, in a repository that has prose and no Vale yet:
 It tries the common style packages against your docs in a temp directory,
 drafts a vocabulary and a decision for each noisy rule, and shows you one
 proposal — what it found, the before and after counts, the CI job. Nothing is
-written until you say yes. If Vale itself is missing, it installs it.
+written until you say yes. If Vale itself is missing, it installs it: through
+Homebrew, pacman or snap where one is available, otherwise the release binary,
+checksum-verified, into a directory already on your `PATH`.
+
+The two read-only scripts the skills run — the preview and the rule inventory
+— are pre-approved in the skills' own frontmatter, so Claude Code does not
+stop to ask before each one. The installer is not: installing software still
+prompts.
 
 No plugin support? Any coding agent that can run a shell can do the same:
 
@@ -37,9 +44,9 @@ session so the hook and the MCP server register):
 /plugin install vale@agent-tools
 ```
 
-You also need the `vale` binary on your `PATH`
-([installation](https://docs.vale.sh/topics/installation)) — the plugin drives
-it, it doesn't bundle it. `jq` too, if you want the hook.
+The plugin drives the `vale` binary; it doesn't bundle it. `/vale:onboard` and
+`/vale:setup` install it if it is missing, or see
+[installation](https://docs.vale.sh/topics/installation).
 
 ### Check it worked
 
@@ -80,7 +87,7 @@ the task fits — or call them directly.
 | `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. |
 | `/vale:tune` | "use title case headings" | Changes one style choice in plain words — headings, contractions, "we", preferred terms — and writes it into the config with its reason. Ships tested templates for the choices no package covers. |
 | `/vale:from-guide` | "enforce our style guide" | Turns a written style guide into the project's own rules, each linked to its section and tested against the guide's own do and don't examples. Says which statements cannot be checked. |
-| `/vale:write-guide` | "document our vale rules" | Writes a readable style guide from the config — what blocks, the style choices and why, the vocabulary — in Markdown, AsciiDoc or reStructuredText. |
+| `/vale:write-guide` | "document our vale rules" | Writes a readable style guide from the config — what blocks, the style choices and why, the vocabulary — in Markdown, MDX, AsciiDoc, reStructuredText, Org or HTML. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
 | `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. |

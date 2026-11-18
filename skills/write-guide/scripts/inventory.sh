@@ -7,7 +7,7 @@
 # block, and which were switched off and why. It is read from the files, not
 # recalled, so the guide cannot drift from the configuration.
 #
-#   inventory.sh [-c .vale.ini] [-f tsv|md|adoc|rst]
+#   inventory.sh [-c .vale.ini] [-f tsv|md|mdx|adoc|rst|org|html]
 #
 # Columns: rule, level (or "off"), message, reason, link.
 #
@@ -27,12 +27,12 @@ while getopts c:f: opt; do
 	case "$opt" in
 	c) cfg=$OPTARG ;;
 	f) fmt=$OPTARG ;;
-	*) echo "usage: inventory.sh [-c .vale.ini] [-f tsv|md|adoc|rst]" >&2; exit 2 ;;
+	*) echo "usage: inventory.sh [-c .vale.ini] [-f tsv|md|mdx|adoc|rst|org|html]" >&2; exit 2 ;;
 	esac
 done
 case "$fmt" in
-tsv | md | adoc | rst) ;;
-*) echo "inventory.sh: unknown format '$fmt' (tsv, md, adoc, rst)" >&2; exit 2 ;;
+tsv | md | mdx | adoc | rst | org | html) ;;
+*) echo "inventory.sh: unknown format '$fmt' (tsv, md, mdx, adoc, rst, org, html)" >&2; exit 2 ;;
 esac
 [ -f "$cfg" ] || { echo "inventory.sh: no config at $cfg" >&2; exit 2; }
 
@@ -100,7 +100,7 @@ done | awk -F '\t' '
 
 case "$fmt" in
 tsv) cat "$tmp" ;;
-md)
+md | mdx)
 	echo "| Rule | Level | What it says | Why we changed it |"
 	echo "|---|---|---|---|"
 	awk -F '\t' '{ m = $3; gsub(/\|/, "\\|", m); w = $4; gsub(/\|/, "\\|", w); printf "| `%s` | %s | %s | %s |\n", $1, $2, m, w }' "$tmp"
@@ -121,5 +121,21 @@ rst)
 	echo '     - What it says'
 	echo '     - Why we changed it'
 	awk -F '\t' '{ printf "   * - ``%s``\n     - %s\n     - %s\n     - %s\n", $1, $2, $3, $4 }' "$tmp"
+	;;
+org)
+	echo "| Rule | Level | What it says | Why we changed it |"
+	echo "|------+-------+--------------+-------------------|"
+	awk -F '\t' '{ m = $3; gsub(/\|/, "\\vert{}", m); w = $4; gsub(/\|/, "\\vert{}", w); printf "| ~%s~ | %s | %s | %s |\n", $1, $2, m, w }' "$tmp"
+	;;
+html)
+	echo '<table>'
+	echo '  <thead><tr><th>Rule</th><th>Level</th><th>What it says</th><th>Why we changed it</th></tr></thead>'
+	echo '  <tbody>'
+	awk -F '\t' '
+		function h(s) { gsub(/&/, "\\&amp;", s); gsub(/</, "\\&lt;", s); gsub(/>/, "\\&gt;", s); return s }
+		{ printf "    <tr><td><code>%s</code></td><td>%s</td><td>%s</td><td>%s</td></tr>\n", h($1), h($2), h($3), h($4) }
+	' "$tmp"
+	echo '  </tbody>'
+	echo '</table>'
 	;;
 esac
