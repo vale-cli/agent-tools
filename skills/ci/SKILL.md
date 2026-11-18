@@ -52,13 +52,25 @@ are worth saying to the user because they answer the first objection:
   The existing backlog never appears on someone's unrelated change.
 - **The job passes whatever Vale finds** (`fail_on_error: false`). That is
   advisory.
-- **Alerts with a known fix are offered as suggested changes** a reviewer can
-  commit from the pull request.
 
 To make it blocking, add `fail_on_error: true`: the job then fails on an
-`error`-level alert in the added lines, and only on those. To get inline
-review comments rather than check annotations, set
-`reporter: github-pr-review`.
+`error`-level alert in the added lines, and only on those.
+
+Set `files:` every time. Its default is the repository root, which lints
+whatever the config's sections match, vendored trees included.
+
+**Suggested fixes.** With `reporter: github-pr-review`, alerts arrive as
+review comments, and one whose rule carries a fix is offered as a suggested
+change the reviewer can commit from the pull request. It is not the default
+reporter, and it does not work on pull requests from forks, whose token is
+read-only — the default reporter still annotates those. Offer it for
+repositories whose contributors push branches; leave the default for open
+source projects that take forks.
+
+**Caching.** `vale sync` downloads every package on every run. For a slow or
+rate-limited runner, restore the `StylesPath` from a cache keyed on
+`.vale.ini` and pass `sync: false` on a hit; the action's README has the
+snippet. Not worth adding by default.
 
 AsciiDoc and reStructuredText need their parser installed in the job first
 (`asciidoctor`, `docutils`). If the config lints source code or another
@@ -80,7 +92,17 @@ repos:
     rev: v3.27.0
     hooks:
       - id: vale
+        name: vale sync
+        pass_filenames: false
+        args: [sync]
+      - id: vale
+        args: [--output=line, --minAlertLevel=error]
 ```
+
+The first entry runs `vale sync`. Without it the hook fails on any clone that
+has not synced, because the styles are not in the repository. The second
+reports errors only: a commit hook that prints every suggestion is one people
+skip. For commit *messages*, see `commits`.
 
 Pin `rev` to a release — check <https://github.com/vale-cli/vale/releases>
 for the current one rather than copying this number. Hooks that float break at the worst time.

@@ -54,8 +54,13 @@ powershell -ExecutionPolicy Bypass -File "${CLAUDE_SKILL_DIR}\scripts\install.ps
   and do their steps by hand with `vale` directly; do not skip them.
 
 `${CLAUDE_SKILL_DIR}` is the directory this file is in; if it reaches you as
-literal text, use that path. Other routes, including pinning Vale's version in
-the project, are at <https://docs.vale.sh/topics/installation.md>. A missing
+literal text, use that path.
+
+If the project already pins its tools, pin Vale the same way instead, so
+everyone and CI run one version: `mise use vale@<version>`,
+`npm install --save-dev @vvago/vale` (run as `npx vale`), `pip install vale`,
+or `conda install conda-forge::vale`. Other routes are at
+<https://docs.vale.sh/topics/installation.md>. A missing
 binary is not a reason to stop and hand the user a to-do.
 
 **2. Find the prose.** `docs/`, `content/`, `*.md` at the root. Do not point
@@ -103,7 +108,10 @@ lines in the middle matter once the config covers source code or another
 language: `vale sync` downloads tree-sitter grammars and language models into
 `config/`, megabytes each, and they are build output like the packages.
 
-**6. `vale sync`, then lint one file** to confirm the setup resolves.
+**6. `vale sync`, then lint one file** to confirm the setup resolves. AsciiDoc
+needs `asciidoctor` on `PATH` and reStructuredText needs `rst2html`
+(`docutils`); without them Vale stops with an error naming the missing tool.
+Install it, and remember the CI job needs it too.
 
 **7. Report the first run honestly.**
 

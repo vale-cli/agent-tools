@@ -44,7 +44,7 @@ drafting is a handful of decisions, not a study. Do not read every file or
 every alert before proposing. If something would take long — a huge corpus, a
 package that will not sync — say so and propose on a sample.
 
-## Workflow
+## Workflow: look and preview
 
 **1. Look.** No questions yet.
 
@@ -90,6 +90,8 @@ For translated docs or source code, the same script previews those too —
 `-l fr <path>` for a language, `-k <path>` for comments — with Vale's built-in
 rules alone, since the style packages are written for English prose.
 
+## Workflow: draft
+
 **3. Draft the baseline, still in temp files.** Four things, each a few
 minutes at most.
 
@@ -126,6 +128,8 @@ Then run the preview once more with all of it, and keep the output:
 sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh -p Microsoft -a accept.txt -o overrides.ini \
   -i text.frontmatter.id -s <scratch>/<Project> <path>
 ```
+
+## Workflow: propose
 
 **4. Propose once.** One message, in this order:
 
@@ -191,6 +195,8 @@ If what is left includes errors you cannot clear honestly — a false positive
 with no clean exemption — say so in "Still errors" and keep CI advisory.
 That is a better proposal than a clean number.
 
+## Workflow: apply and verify
+
 **5. Apply**, in one go, once they say yes:
 
 - `.vale.ini`, the ignore rules and `vale sync` (`setup`)
@@ -222,6 +228,8 @@ Exit 0 means a blocking job would pass today.
 
 **7. Commit** the config, ignore rules, vocabulary, own rules and CI change
 together, following the repository's conventions. Not the synced packages.
+
+## Workflow: finish
 
 **8. Offer the editor.** One line, not a step to wait on: alerts as they type
 come from the Vale language server, which most editors can use —
