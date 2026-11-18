@@ -1,0 +1,23 @@
+# The project's preferred terms: the spelling on the right replaces the one on
+# the left. This is where "VS Code, not VSCode" lives — a vocabulary can accept
+# or reject a word, but only a rule can say what to write instead.
+#
+# Keys are case-sensitive regular expressions. Replace the examples with the
+# project's own pairs, and give each pair a test.
+extends: substitution
+message: "Use '%s' instead of '%s'."
+level: warning
+ignorecase: false
+swap:
+  'VSCode|vscode|Visual Studio Code': VS Code
+  '[Ii]ntellij': IntelliJ
+tests:
+  - name: flags a wrong spelling
+    input: Open the project in VSCode.
+    contains: "Use 'VS Code' instead of 'VSCode'."
+  - name: flags a wrong casing
+    input: Intellij has a plugin for this.
+    contains: "'IntelliJ'"
+  - name: accepts the preferred terms
+    input: VS Code and IntelliJ both work.
+    want: ''

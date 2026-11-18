@@ -8,12 +8,13 @@
 # once per candidate package to compare them, then again with a proposed
 # vocabulary and overrides to see the baseline before anyone commits to it.
 #
-#   preview.sh [-p Package] [-a accept.txt] [-o overrides.ini] path...
+#   preview.sh [-p Package] [-a accept.txt] [-o overrides.ini] [-s styledir] path...
 #
 #   -p  style package to try (default: Microsoft). The package and the style
 #       it installs must share a name, which holds for the common ones.
 #   -a  file of vocabulary terms, one per line, to accept
 #   -o  file of per-rule overrides (`Style.Rule = NO`), appended to the section
+#   -s  directory of the project's own rules, enabled under its own name
 #
 # POSIX sh and POSIX tools only, plus vale. No jq: this is the first thing a
 # new user runs, and it should not fail on a missing dependency.
@@ -22,12 +23,14 @@ set -u
 pkg=Microsoft
 accept=''
 over=''
-while getopts p:a:o: opt; do
+house=''
+while getopts p:a:o:s: opt; do
 	case "$opt" in
 	p) pkg=$OPTARG ;;
 	a) accept=$OPTARG ;;
 	o) over=$OPTARG ;;
-	*) echo "usage: preview.sh [-p Package] [-a accept.txt] [-o overrides.ini] path..." >&2; exit 2 ;;
+	s) house=${OPTARG%/} ;;
+	*) echo "usage: preview.sh [-p Package] [-a accept.txt] [-o overrides.ini] [-s styledir] path..." >&2; exit 2 ;;
 	esac
 done
 shift $((OPTIND - 1))
@@ -42,6 +45,9 @@ tmpl=$(dirname "$0")/preview.tmpl
 for f in "$accept" "$over"; do
 	[ -z "$f" ] || [ -f "$f" ] || { echo "preview.sh: no such file: $f" >&2; exit 2; }
 done
+[ -z "$house" ] || [ -d "$house" ] || { echo "preview.sh: no such directory: $house" >&2; exit 2; }
+hname=''
+[ -z "$house" ] || hname=$(basename "$house")
 
 work=$(mktemp -d "${TMPDIR:-/tmp}/vale-preview.XXXXXX") || exit 2
 trap 'rm -rf "$work"' EXIT INT TERM
@@ -66,13 +72,18 @@ esac
 	[ -z "$accept" ] || echo "Vocab = Preview"
 	echo
 	echo "[$glob]"
-	echo "BasedOnStyles = Vale, $pkg"
+	echo "BasedOnStyles = Vale, $pkg${hname:+, $hname}"
 	[ -z "$over" ] || { echo; cat "$over"; }
 } >"$work/.vale.ini"
 
 if [ -n "$accept" ]; then
 	mkdir -p "$work/styles/config/vocabularies/Preview"
 	cp "$accept" "$work/styles/config/vocabularies/Preview/accept.txt"
+fi
+
+if [ -n "$house" ]; then
+	mkdir -p "$work/styles/$hname"
+	cp "$house"/*.yml "$work/styles/$hname/"
 fi
 
 if ! vale --no-global --config="$work/.vale.ini" sync >"$work/sync.log" 2>&1; then
@@ -91,6 +102,7 @@ echo "Package:  $pkg"
 echo "Section:  [$glob]"
 printf 'Files:    %s\n' "$(printf '%s\n' "$exts" | awk '{ printf "%s%s .%s", (NR > 1 ? ", " : ""), $1, $2 }')"
 [ -z "$accept" ] || echo "Vocab:    $(grep -c . "$accept") terms accepted"
+[ -z "$house" ] || echo "Own rules: $hname ($(ls "$house"/*.yml | wc -l | tr -d ' ') files)"
 [ -z "$over" ] || echo "Rules:    $(grep -c '^[^#[:space:]].*=' "$over") overrides applied"
 
 awk -F '\t' '

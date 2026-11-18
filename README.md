@@ -25,8 +25,8 @@ it, it doesn't bundle it. `jq` too, if you want the hook.
 
 Three separate things install, and they're verified three different ways.
 
-**The skills.** Type `/vale:` and six completions should appear — `onboard`,
-`setup`, `fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
+**The skills.** Type `/vale:` and seven completions should appear —
+`onboard`, `setup`, `tune`, `fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
 
 **The hook.** This is the one that surprises people: it runs on *Claude's*
 edits, not yours. Editing a file in your own editor does nothing. To see it,
@@ -57,6 +57,7 @@ the task fits — or call them directly.
 |---|---|---|
 | `/vale:onboard` | "set up vale end to end" | Previews the whole baseline in a temp directory — package, vocabulary, a decision per noisy rule, CI — shows it with before/after counts, and applies it on one yes. |
 | `/vale:setup` | "add prose linting" | Installs Vale, writes a `.vale.ini` matching the formats actually present, syncs styles, and reports the first run honestly. |
+| `/vale:tune` | "use title case headings" | Changes one style choice in plain words — headings, contractions, "we", preferred terms — and writes it into the config with its reason. Ships tested templates for the choices no package covers. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
 | `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. |
@@ -155,7 +156,8 @@ repository sits across both:
 | **MCP server** | Vale CMS, at `api.vale.sh` | yes |
 
 The skills and the hook **consume** styles — they run rules that already exist
-and act on the alerts. The MCP server **authors and verifies** them. That is why
+and act on the alerts. The one exception is `tune`, which ships three fixed,
+tested templates for choices no package covers. The MCP server **authors and verifies** them. That is why
 it is the paid piece: running a linter is Vale's job and it is free, while
 handing an assistant a live engine to check its own work against is what Vale
 CMS is.

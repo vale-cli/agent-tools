@@ -60,7 +60,7 @@ styles/*
 ```
 
 `styles/config/` holds the vocabularies, and `styles/<Project>/` is where the
-project's own rules go if it ever writes any. Ignoring `styles/` outright
+project's own rules go — see `tune`. Ignoring `styles/` outright
 silently drops both from every commit.
 
 **6. `vale sync`, then lint one file** to confirm the setup resolves.

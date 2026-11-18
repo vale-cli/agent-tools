@@ -63,10 +63,19 @@ Google, so the choice between them comes with numbers instead of a shrug.
 - *Then overrides*, by the `triage` buckets, in a scratch file with the reason
   as a comment above each line. A package ships some rules at `error`; each of
   those needs a decision before CI can block on anything.
-- *Run the preview again* with both, and keep the output:
+- *Then the style choices.* The table in `tune` names the ones teams argue
+  about — heading capitalization, contractions, "we", passive voice. For each,
+  read what the corpus already does from the counts and pick that as the
+  default: a rule with 10 hits in 290 headings is the house style; one with 75
+  is not. Where the corpus does the opposite of the package, use the template
+  from `tune`'s `house/` directory in a scratch style directory.
+- *Preferred terms.* Inconsistent spellings in the spelling list ("VSCode",
+  "vscode", "Vscode") are a `Terms.yml` pair waiting to be written, not
+  vocabulary.
+- *Run the preview again* with all of it, and keep the output:
 
 ```bash
-sh <this skill's directory>/scripts/preview.sh -p Microsoft -a accept.txt -o overrides.ini <path>
+sh <this skill's directory>/scripts/preview.sh -p Microsoft -a accept.txt -o overrides.ini -s <scratch>/<Project> <path>
 ```
 
 **4. Propose once.** One message, in this order, short enough to read:
@@ -80,11 +89,17 @@ With baseline   335       11        65          259
 
 Package:     Microsoft   (Google: 571 alerts, 67 errors — say so to switch)
 Vocabulary:  12 terms    Jilles, Tengo, Linode, Buildkite, …
-Overrides:   4
-  Microsoft.We = NO                    docs address the reader as "we"
-  Microsoft.Quotes = warning           right rule, 9 existing hits
-  Microsoft.Contractions = suggestion  register varies by page
-  Microsoft.Foreign = warning          right rule, 4 existing hits
+
+Style choices — taken from how the docs are written today; change any
+  Headings       sentence case   10 of 290 differ (title case would flag 75)
+  "We"           allowed         47 uses; the docs speak as "we" throughout
+  Contractions   advice only     6 uncontracted; register varies by page
+  "e.g."         spell out       4 hits, shown in review, not blocking
+  Passive voice  advice only     77 hits
+  Terms          VS Code, IntelliJ   8 inconsistent spellings get a fix
+
+Other overrides: 1
+  Microsoft.Quotes = warning     right rule, 9 existing hits
 CI:          update .github/workflows/main.yml, advisory
 Still errors: 11 — inconsistent spellings ("VSCode", "intellij"). Real
               findings; I'd leave them for a follow-up fix.
@@ -93,7 +108,10 @@ Apply this? Or tell me what to change.
 ```
 
 Every editorial choice is in there with the default you picked and the
-alternative: the package, each override, whether CI blocks. A "yes" accepts
+evidence for it: the package, the style choices in plain words, each remaining
+override, whether CI blocks. Name the choices the way the team would — "title
+case", not `capitalization` — and keep rule names for the lines that have no
+plainer description. A "yes" accepts
 all of it; "use Google" or "keep We" changes one line and you re-preview —
 do not start over, and do not re-ask what was already accepted.
 
@@ -105,6 +123,8 @@ ignore it.
 - `.vale.ini`, the ignore rules and `vale sync` (`setup`)
 - the vocabulary, named in the config (`vocab`)
 - the overrides, each with its reason (`triage`)
+- the style choices and any own rules, with `vale test --coverage styles/<Project>` passing
+  (`tune`)
 - the CI change — update a job that already runs Vale rather than adding a
   second (`ci`)
 
