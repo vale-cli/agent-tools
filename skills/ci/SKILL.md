@@ -32,14 +32,39 @@ whether it can stop a merge.
 ## GitHub Actions
 
 ```yaml
-- uses: vale-cli/vale-action@v3
-  with:
-    files: docs
+name: Vale
+on: [pull_request]
+
+jobs:
+  vale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vale-cli/vale-action@v3
+        with:
+          files: docs
 ```
 
-Alerts arrive as review comments on the pull request, which is where a writer
-will see them. Use a release tag, not a branch name: a branch moves without
-notice.
+Three defaults make this safe to add to a repository with a backlog, and they
+are worth saying to the user because they answer the first objection:
+
+- **Only lines the pull request adds are reported** (`filter_mode: added`).
+  The existing backlog never appears on someone's unrelated change.
+- **The job passes whatever Vale finds** (`fail_on_error: false`). That is
+  advisory.
+- **Alerts with a known fix are offered as suggested changes** a reviewer can
+  commit from the pull request.
+
+To make it blocking, add `fail_on_error: true`: the job then fails on an
+`error`-level alert in the added lines, and only on those. To get inline
+review comments rather than check annotations, set
+`reporter: github-pr-review`.
+
+AsciiDoc and reStructuredText need their parser installed in the job first
+(`asciidoctor`, `docutils`). Use a release tag for the action, not a branch
+name: a branch moves without notice. If the repository already has a Vale
+job, update that one — an old `errata-ai/vale-action@v1` step is the same
+action under its previous name.
 
 ## pre-commit
 

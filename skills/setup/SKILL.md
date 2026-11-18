@@ -19,9 +19,21 @@ working config already exists, the user probably wants `fix` or
 
 ## Workflow
 
-**1. Install** if `vale --version` fails: `brew install vale`,
-`choco install vale`, or a binary from
-<https://docs.vale.sh/topics/installation.md>.
+**1. Install** if `vale --version` fails. Do it rather than asking the user
+to, and say that you did:
+
+- Homebrew present: `brew install vale`
+- Windows: `choco install vale`
+- Otherwise, on Linux or macOS, `scripts/install.sh` beside this file. It
+  downloads the release binary into `~/.local/bin`, and refuses to install
+  one that does not match the release's published checksum:
+
+```bash
+sh <this skill's directory>/scripts/install.sh
+```
+
+Other routes are at <https://docs.vale.sh/topics/installation.md>. A missing
+binary is not a reason to stop and hand the user a to-do.
 
 **2. Find the prose.** `docs/`, `content/`, `*.md` at the root. Do not point
 Vale at the whole repository: vendored directories, changelogs and generated

@@ -28,11 +28,18 @@ have not seen run yet.
 Say one short line as each step starts ("Trying Microsoft and Google against
 docs/…"). Long silences read as being stuck.
 
+**Speed is part of the result.** The proposal should be on screen within a
+couple of minutes of the request: the preview script takes seconds, and the
+drafting is a handful of decisions, not a study. Do not read every file or
+every alert before proposing. If something would take long — a huge corpus, a
+package that will not sync — say so and propose on a sample.
+
 ## Workflow
 
 **1. Look.** No questions yet.
 
-- `vale --version`. If it fails, install it (see `setup`) and say that you did.
+- `vale --version`. If it fails, install it — `setup` has the script — and
+  say that you did. Do not stop to ask.
 - `vale ls-config`. If a config already resolves, this is not onboarding — say
   so and offer `triage`. If one exists and fails to load, repair it rather
   than writing a second.
@@ -47,12 +54,15 @@ rule plus the terms spell check does not know. It needs only `vale`, and it
 writes nothing to the repository:
 
 ```bash
+sh <this skill's directory>/scripts/preview.sh -p Microsoft -p Google <path>
 sh <this skill's directory>/scripts/preview.sh -p Microsoft <path>
-sh <this skill's directory>/scripts/preview.sh -p Google <path>
 ```
 
-If the user named a package, preview that one. Otherwise preview Microsoft and
-Google, so the choice between them comes with numbers instead of a shrug.
+The first form is a side-by-side count; the second is one package's rules,
+with a real alert from the user's own files for each of the busiest. If the
+user named a package, go straight to the second. Otherwise compare Microsoft
+and Google, so the choice comes with numbers instead of a shrug, and take the
+quieter one as the default.
 
 **3. Draft the baseline, still in temp files.**
 
@@ -87,6 +97,11 @@ Vale baseline for docs/ (40 .md, 14 .mdx) — nothing written yet
 First run       404       52        99          253
 With baseline   335       11        65          259
 
+What it found, in your files
+  docs/install.md:14      "VSCode" — you write "VS Code" 31 times elsewhere
+  docs/api/auth.md:52     "e.g.," → "for example"
+  docs/guide/start.md:8   a 46-word sentence
+
 Package:     Microsoft   (Google: 571 alerts, 67 errors — say so to switch)
 Vocabulary:  12 terms    Jilles, Tengo, Linode, Buildkite, …
 
@@ -100,12 +115,17 @@ Style choices — taken from how the docs are written today; change any
 
 Other overrides: 1
   Microsoft.Quotes = warning     right rule, 9 existing hits
-CI:          update .github/workflows/main.yml, advisory
+CI:          update .github/workflows/main.yml — advisory, and only on lines
+             a pull request adds, so the backlog never lands on anyone
 Still errors: 11 — inconsistent spellings ("VSCode", "intellij"). Real
               findings; I'd leave them for a follow-up fix.
 
 Apply this? Or tell me what to change.
 ```
+
+Lead with two or three things it actually caught, picked from the preview's
+examples — a real inconsistency in a named file convinces where a count does
+not. Choose findings the team would agree are mistakes, not the busiest rule.
 
 Every editorial choice is in there with the default you picked and the
 evidence for it: the package, the style choices in plain words, each remaining
@@ -140,7 +160,12 @@ glob or an override is not matching; find out which before reporting.
 **7. Commit** the config, ignore rules, vocabulary and CI change together,
 following the repository's conventions. Not the synced packages.
 
-**8. Close with the result and one next step.** The table from the proposal,
+**8. Offer the editor.** One line, not a step to wait on: alerts as they type
+come from the Vale language server, which most editors can use —
+<https://docs.vale.sh/guides/lsp.md>. CI catches it at review; the editor
+catches it before.
+
+**9. Close with the result and one next step.** The table from the proposal,
 what was committed, the exit code, and the single most useful thing to do
 next — usually "fix the 11 remaining errors, then CI can block". Not a menu.
 

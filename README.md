@@ -7,6 +7,26 @@ Everything here drives [Vale](https://vale.sh), the prose linter. The skills run
 the CLI in your repository — they edit your files and open your pull requests,
 and they need no account.
 
+## Set up in one prompt
+
+With the plugin installed, in a repository that has prose and no Vale yet:
+
+```
+/vale:onboard
+```
+
+It tries the common style packages against your docs in a temp directory,
+drafts a vocabulary and a decision for each noisy rule, and shows you one
+proposal — what it found, the before and after counts, the CI job. Nothing is
+written until you say yes. If Vale itself is missing, it installs it.
+
+No plugin support? Any coding agent that can run a shell can do the same:
+
+```
+Clone https://github.com/vale-cli/agent-tools into a temp directory, then
+follow skills/onboard/SKILL.md to set up Vale in this repository.
+```
+
 ## Install
 
 In Claude Code, type these two as slash commands (the second one restarts the
