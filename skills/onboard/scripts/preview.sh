@@ -24,6 +24,11 @@
 #   -l  the language the files are written in, as Lang takes it (fr, de,
 #       pt-BR). Without a dictionary for it, spell check skips the files.
 #   -d  directory of Hunspell .dic/.aff files to spell check with
+#   -A  vocabulary terms given inline, comma-separated: -A 'Tengo,Linode'
+#   -O  overrides given inline, semicolon-separated:
+#       -O 'Microsoft.We=NO;Microsoft.Quotes=warning'
+#   -t  print tab-separated records instead of the report, for a program to
+#       read: meta, counts, package, rule and term lines
 #   -a  file of vocabulary terms, one per line, to accept
 #   -o  file of per-rule overrides (`Style.Rule = NO`), appended to the section
 #   -s  directory of the project's own rules, enabled under its own name
@@ -49,7 +54,10 @@ real=0
 code=0
 lang=''
 dicts=''
-while getopts p:a:o:s:i:rkl:d: opt; do
+tsv=0
+terms_in=''
+over_in=''
+while getopts p:a:o:s:i:rkl:d:tA:O: opt; do
 	case "$opt" in
 	p) pkgs="$pkgs $OPTARG" ;;
 	a) accept=$OPTARG ;;
@@ -60,12 +68,15 @@ while getopts p:a:o:s:i:rkl:d: opt; do
 	k) code=1 ;;
 	l) lang=$OPTARG ;;
 	d) dicts=${OPTARG%/} ;;
+	t) tsv=1 ;;
+	A) terms_in=$OPTARG ;;
+	O) over_in=$OPTARG ;;
 	*) echo "$usage" >&2; exit 2 ;;
 	esac
 done
 shift $((OPTIND - 1))
 [ $# -gt 0 ] || { echo "preview.sh: give at least one path to lint" >&2; echo "$usage" >&2; exit 2; }
-if [ "$real" -eq 1 ] && [ -n "$pkgs$accept$over$house$scopes$lang$dicts" ]; then
+if [ "$real" -eq 1 ] && [ -n "$pkgs$accept$over$house$scopes$lang$dicts$terms_in$over_in" ]; then
 	echo "preview.sh: -r reads the repository's configuration and takes no other options" >&2
 	exit 2
 fi
@@ -87,7 +98,7 @@ for f in "$accept" "$over"; do
 	[ -z "$f" ] || [ -f "$f" ] || { echo "preview.sh: no such file: $f" >&2; exit 2; }
 done
 [ -z "$house" ] || [ -d "$house" ] || { echo "preview.sh: no such directory: $house" >&2; exit 2; }
-if [ "$npkg" -gt 1 ] && [ -n "$over" ]; then
+if [ "$npkg" -gt 1 ] && [ -n "$over$over_in" ]; then
 	echo "preview.sh: -o names one package's rules; use it with a single -p" >&2
 	exit 2
 fi
@@ -104,6 +115,16 @@ if command -v cygpath >/dev/null 2>&1; then
 	tmpl=$(cygpath -m "$tmpl")
 fi
 esc=$(printf '\033')
+
+# Inline terms and overrides become the files the rest of the script expects.
+if [ -n "$terms_in" ]; then
+	{ [ -z "$accept" ] || cat "$accept"; printf '%s\n' "$terms_in" | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | grep .; } >"$work/accept.inline"
+	accept=$work/accept.inline
+fi
+if [ -n "$over_in" ]; then
+	{ [ -z "$over" ] || cat "$over"; printf '%s\n' "$over_in" | tr ';' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//; s/[[:space:]]*=[[:space:]]*/ = /' | grep '='; } >"$work/over.inline"
+	over=$work/over.inline
+fi
 
 # The formats actually present decide the section glob. A section that matches
 # nothing lints nothing, and Vale does not warn about it.
@@ -175,17 +196,25 @@ lint() {
 
 # Several packages: one row each, so the choice comes with numbers.
 if [ "$npkg" -gt 1 ]; then
-	echo "Section:  [$glob]"
-	echo "Files:    $files"
-	echo
-	printf '%-14s %7s %7s %9s %12s\n' Package total errors warnings suggestions
+	if [ "$tsv" -eq 1 ]; then
+		printf 'meta\tsection\t%s\nmeta\tfiles\t%s\n' "$glob" "$files"
+	else
+		echo "Section:  [$glob]"
+		echo "Files:    $files"
+		echo
+		printf '%-14s %7s %7s %9s %12s\n' Package total errors warnings suggestions
+	fi
 	for p in $pkgs; do
 		lint "$p" "$@" || exit 2
-		awk -F '\t' -v p="$p" '
+		awk -F '\t' -v p="$p" -v tsv="$tsv" '
 			$1 ~ /^(error|warning|suggestion)$/ && NF >= 2 { n++; sev[$1]++ }
-			END { printf "%-14s %7d %7d %9d %12d\n", p, n, sev["error"], sev["warning"], sev["suggestion"] }
+			END {
+				if (tsv == 1) printf "package\t%s\t%d\t%d\t%d\t%d\n", p, n, sev["error"], sev["warning"], sev["suggestion"]
+				else printf "%-14s %7d %7d %9d %12d\n", p, n, sev["error"], sev["warning"], sev["suggestion"]
+			}
 		' "$work/$p.tsv"
 	done
+	[ "$tsv" -eq 1 ] && exit 0
 	echo
 	echo "Run again with one -p for that package's rules and examples."
 	exit 0
@@ -199,11 +228,33 @@ if [ "$real" -eq 1 ]; then
 		exit 2
 	fi
 	tr -d '\r' <"$work/raw.tsv" >"$out"
-	echo "Config:   the repository's own"
+	[ "$tsv" -eq 1 ] || echo "Config:   the repository's own"
+	pkg=''
 else
 	pkg=${pkgs# }
 	lint "$pkg" "$@" || exit 2
 	out=$work/$pkg.tsv
+fi
+
+# For a program: every count, every rule with one example, every unknown term.
+if [ "$tsv" -eq 1 ]; then
+	printf 'meta\tpackage\t%s\nmeta\tsection\t%s\nmeta\tfiles\t%s\n' "${pkg:-(repository)}" "$glob" "$files"
+	awk -F '\t' '
+		$1 ~ /^(error|warning|suggestion)$/ && NF >= 2 {
+			n++; sev[$1]++; rule[$2]++; rsev[$2] = $1
+			if (!($2 in ex) && NF >= 5) ex[$2] = $3 ":" $4 "  " $5
+			if ($2 == "Vale.Spelling" && NF >= 6) { t[$6]++; if (!($6 in at)) at[$6] = $3 ":" $4 }
+		}
+		END {
+			printf "counts\t%d\t%d\t%d\t%d\n", n, sev["error"], sev["warning"], sev["suggestion"]
+			for (r in rule) printf "rule\t%s\t%s\t%d\t%s\n", r, rsev[r], rule[r], ex[r]
+			for (w in t) printf "term\t%s\t%d\t%s\n", w, t[w], at[w]
+		}
+	' "$out"
+	exit 0
+fi
+
+if [ "$real" -eq 0 ]; then
 	if [ "$pkg" = Vale ]; then echo "Package:  none (Vale's built-in rules)"; else echo "Package:  $pkg"; fi
 	echo "Section:  [$glob]"
 	[ -z "$lang" ] || echo "Language: $lang"

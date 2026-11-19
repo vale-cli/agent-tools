@@ -170,6 +170,16 @@ clone, and an assistant's checkout usually has not run the project's setup.
 This gives the assistant's commits the same check. Without that section in the
 config it does nothing.
 
+### Onboarding as a pane
+
+`vale-onboard` is a third plugin in this marketplace, also experimental. It
+draws the onboarding proposal beside the chat: a button per style package with
+its alert count, the before and after table, a button on each rule that makes
+it quieter, the unknown words to tick, and Apply. Every press re-runs the
+preview, so the numbers are always what you would get. Apply writes nothing
+itself — it puts the chosen baseline in the prompt for Claude to apply through
+the `onboard` skill. See [`plugins/vale-onboard`](plugins/vale-onboard).
+
 ### The language server, as an alternative
 
 `vale-lsp` is a second, experimental plugin in this marketplace. It connects

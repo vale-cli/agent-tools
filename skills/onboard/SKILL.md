@@ -295,6 +295,21 @@ can block". Not a menu: the options were in the proposal, and repeating them
 here is noise. If they picked one — the editor, say — do it or point to it
 now (<https://docs.vale.sh/guides/lsp.md> for the language server).
 
+## If the proposal comes from the setup pane
+
+The `vale-onboard` plugin draws this proposal as a pane: the person picks the
+package, what each rule does and which words to accept there, and presses
+Apply, which puts the result in the prompt as a message beginning "Apply this
+Vale baseline". That message is the yes. Do not re-preview the candidates or
+re-propose; go to the apply step with exactly what it lists.
+
+- Write each override it names, with the reason it gives as the comment.
+- Accept only the words it lists. The ones it says were left unticked are
+  findings: mention them at the end, do not add them.
+- Its "Expected after applying" counts are what step 6 should match.
+- Anything under "Also set up" is a yes to that option; use its skill after
+  the baseline is committed.
+
 ## If it is interrupted
 
 Running this again should pick up, not restart. Check what exists — a config

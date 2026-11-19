@@ -17,3 +17,5 @@
 # them to differ per platform either.
 *.json text eol=lf
 *.md text eol=lf
+*.tsx text eol=lf
+*.ts text eol=lf

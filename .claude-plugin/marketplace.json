@@ -18,6 +18,11 @@
       "name": "vale-lsp",
       "source": "./plugins/vale-lsp",
       "description": "Vale's language server for Claude Code: alerts on prose files arrive as diagnostics after each edit. Experimental; needs the vale-ls binary on PATH."
+    },
+    {
+      "name": "vale-onboard",
+      "source": "./plugins/vale-onboard",
+      "description": "A pane for setting up Vale: compare style packages against your docs, decide what each noisy rule does, tick the words that are right, and hand the result to Claude to apply. Experimental."
     }
   ]
 }
