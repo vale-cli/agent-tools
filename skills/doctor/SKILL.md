@@ -39,8 +39,9 @@ warn  a run on README.md reports nothing
 
 It checks, in order: the binary, whether the configuration loads, whether
 every style it names is on disk, the vocabulary and whether git tracks it,
-whether a real run on a real file works, the markup parsers AsciiDoc and
-reStructuredText need, and the hooks.
+whether a real run on a real file works, whether a user-level configuration
+changes the result, the markup parsers AsciiDoc and reStructuredText need,
+and the hooks.
 
 **2. Report it as it is.** Lead with the `FAIL` lines and their fixes, then
 the warnings, then one line saying the rest is fine. Do not turn a warning
@@ -61,7 +62,8 @@ into a problem or a clean result into a longer one.
 - **"It worked yesterday."** `StylesPath` is not in git, and a fresh clone or a
   cleaned checkout has no styles until `vale sync` runs.
 - **"It passes locally and fails in CI"**, or the reverse. A user-level config
-  on one machine is being merged in. Compare with `vale --no-global`.
+  on one machine is being merged in. The check names the file and gives the
+  alert count with and without it; `vale ls-dirs` shows where Vale looks.
 - **"Every word is a spelling error."** A file in another language read as
   English, or a dictionary file that is not a dictionary. See `setup` and
   `vocab`.

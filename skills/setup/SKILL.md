@@ -189,8 +189,42 @@ Vale.Spelling = warning
 
 The languages and their extensions: <https://docs.vale.sh/formats/code.md>.
 
+## A configuration for every project on this machine
+
+Vale also reads one user-level `.vale.ini`, in addition to the project's, on
+every run. It suits what belongs to a person rather than a team: rules they
+want on their own writing everywhere, or linting files that sit outside any
+project. `vale ls-dirs` prints where the file and its styles go.
+
+Offer it only when the user asks for something machine-wide. It is their
+file, outside the repository: say what you will write before writing it.
+
+```ini
+Packages = write-good
+
+[*.md]
+BasedOnStyles = Vale, write-good
+```
+
+- Leave `StylesPath` out. The styles then go in the directory `vale ls-dirs`
+  names, which every run already searches.
+- Sync it by name. A plain `vale sync` inside a project reads the project's
+  file only:
+
+```bash
+vale --config="<the .vale.ini path from vale ls-dirs>" sync
+```
+
+- Where both files set a key, the project's value wins. `BasedOnStyles` for
+  the same glob is the exception: the two lists are combined, so a
+  user-level style runs in every project that glob matches.
+- Nobody else has this file. Anything the team relies on goes in the
+  project's `.vale.ini`, and CI runs with `--no-global`. `doctor` reports
+  what the user-level file changes in a project.
+
 ## Do not
 
+- Do not put a team's rules in the user-level configuration.
 - Do not commit synced packages, and do not ignore `styles/config/` or the
   project's own style along with them.
 - Do not pick the style package without asking.

@@ -104,6 +104,37 @@ git check-ignore -v styles/config/vocabularies/<Project>/accept.txt
 Any output means a `.gitignore` rule is covering it. Narrow that rule to
 `styles/*` with `!styles/config/` rather than forcing the file in.
 
+## Words that are the user's, not the project's
+
+Someone's own name, employer or handle gets flagged in every repository they
+write in, and does not belong in each project's vocabulary. Those go in a
+user-level vocabulary instead. `vale ls-dirs` prints the two locations:
+
+```
+<user-level StylesPath>/config/vocabularies/<Name>/accept.txt
+```
+
+and, at the top of the user-level `.vale.ini`:
+
+```ini
+Vocab = <Name>
+```
+
+It is added to each project's own vocabulary, not swapped for it. A project
+that must not pick it up starts its own list with `NONE`: `Vocab = NONE,
+<Project>`.
+
+Two cautions:
+
+- It is the user's file, outside the repository. Say what you will write.
+- Check one project that has its own `Vocab` afterwards. If `vale ls-config`
+  there stops with "vocabulary not found", this Vale reads a user-level
+  `Vocab` before the project's `StylesPath`: remove the line and upgrade
+  Vale first.
+
+Product names and jargon still go in the project's vocabulary, where the
+team and CI get them.
+
 ## Dictionaries: which English
 
 Vale's built-in dictionary accepts both "color" and "colour". A project gets

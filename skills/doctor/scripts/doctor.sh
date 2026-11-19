@@ -32,9 +32,15 @@ ok "vale $(vale --version 2>/dev/null | sed 's/^vale version //') at $(command -
 
 # ---- the configuration
 if ! out=$(vale ls-config 2>&1); then
+	if vale --no-global ls-config >/dev/null 2>&1; then
+		fail "the project's configuration loads on its own, but not with the user-level one merged in" "vale ls-dirs names that file; if it sets Vocab, remove the line or upgrade Vale"
+		echo
+		echo "Nothing else can be checked until the configuration loads."
+		exit 1
+	fi
 	why=$(printf '%s\n' "$out" | plain | grep -v '^Execution stopped' | tail -n 1)
 	case "$out" in
-	*'not found'*) fail "no configuration: $why" "run the onboard skill, or setup" ;;
+	*'.vale.ini not found'*) fail "no configuration: $why" "run the onboard skill, or setup" ;;
 	*) fail "the configuration does not load: $why" "fix the line it names in .vale.ini, then run this again" ;;
 	esac
 	echo
@@ -127,6 +133,30 @@ else
 		warn "a run on $(rel "$target") reports nothing" "if that is a surprise, check that a [section] glob in the configuration matches this file"
 	else
 		ok "a run on $(rel "$target") works: $n alerts"
+	fi
+fi
+
+# ---- the user-level configuration, which no other machine has
+if [ -n "$cfg" ]; then
+	dirs=$(vale ls-dirs --output=JSON 2>/dev/null)
+	key() { printf '%s\n' "$dirs" | sed -n "s/^[[:space:]]*\"$1\":[[:space:]]*\"\(.*\)\",\{0,1\}[[:space:]]*\$/\1/p"; }
+	gcfg=$(key '\.vale\.ini')
+	gsp=$(key StylesPath)
+	if [ -n "$gcfg" ] && [ -f "$gcfg" ] && [ "$gcfg" != "$cfg" ]; then
+		# Its own paths and the StyleSources record always differ; anything else is a change.
+		settings() {
+			awk '/^  "StyleSources": \{/ { skip = 1 } skip { if (/^  \}/) skip = 0; next } !/^  "StyleSources"/' |
+				grep -v -F -e "$gcfg" -e "${gsp:-$gcfg}"
+		}
+		if [ "$(printf '%s\n' "$out" | settings)" = "$(vale --no-global ls-config 2>/dev/null | settings)" ]; then
+			ok "the user-level configuration at $gcfg changes nothing here"
+		else
+			how='compare a run with vale --no-global'
+			if [ -n "$target" ] && [ -n "${n:-}" ] && bare=$(vale --no-global --no-exit --output=line "$target" 2>/dev/null); then
+				how="a run on $(rel "$target") gives $n alerts with it and $(printf '%s\n' "$bare" | grep -c ':') without (vale --no-global)"
+			fi
+			warn "a user-level configuration is merged into this one: $gcfg" "it is not in the repository, so CI and other machines run without it; $how"
+		fi
 	fi
 fi
 
