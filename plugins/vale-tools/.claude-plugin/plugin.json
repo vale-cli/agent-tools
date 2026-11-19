@@ -6,7 +6,7 @@
     "name": "Joseph Kato",
     "url": "https://vale.sh"
   },
-  "homepage": "https://vale.sh/skills",
+  "homepage": "https://vale.sh/agents",
   "repository": "https://github.com/vale-cli/agent-tools",
   "license": "MIT",
   "keywords": ["vale", "prose", "linting", "tools"]

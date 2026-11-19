@@ -82,14 +82,21 @@ esac
 # The walk stops when dirname stops making progress rather than at "/",
 # because not every tree tops out there: a Windows drive root under Git
 # Bash is its own fixed point.
+# has_config is true for a directory holding any name Vale's own search
+# accepts, so the walk stops where Vale's would.
+has_config() {
+	[ -f "$1/.vale.ini" ] || [ -f "$1/_vale.ini" ] || [ -f "$1/vale.ini" ] ||
+		[ -f "$1/.config/vale.ini" ]
+}
+
 root=$(dirname "$file")
 adopted=1
 prev=''
-while [ "$root" != "$prev" ] && [ ! -f "$root/.vale.ini" ] && [ ! -f "$root/_vale.ini" ]; do
+while [ "$root" != "$prev" ] && ! has_config "$root"; do
 	prev=$root
 	root=$(dirname "$root")
 done
-if [ ! -f "$root/.vale.ini" ] && [ ! -f "$root/_vale.ini" ]; then
+if ! has_config "$root"; then
 	adopted=0
 	root=$(dirname "$file")
 fi

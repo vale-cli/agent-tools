@@ -67,9 +67,9 @@ The plugin drives the `vale` binary; it doesn't bundle it. `/vale:onboard` and
 
 Three separate things install, and they're verified three different ways.
 
-**The skills.** Type `/vale:` and eleven completions should appear —
-`onboard`, `setup`, `doctor`, `tune`, `from-guide`, `write-guide`, `commits`,
-`fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
+**The skills.** Type `/vale:` and thirteen completions should appear —
+`onboard`, `setup`, `doctor`, `tune`, `from-guide`, `write-guide`, `rule`,
+`ignore`, `commits`, `fix`, `triage`, `vocab`, `ci`. That's the whole check; they're just prompts.
 
 **The hook.** This is the one that surprises people: it runs on *Claude's*
 edits, not yours. Editing a file in your own editor does nothing. To see it,
@@ -104,6 +104,8 @@ the task fits — or call them directly.
 | `/vale:tune` | "use title case headings" | Changes one style choice in plain words — headings, contractions, "we", preferred terms — and writes it into the config with its reason. Ships tested templates for the choices no package covers. |
 | `/vale:from-guide` | "enforce our style guide" | Turns a written style guide into the project's own rules, each linked to its section and tested against the guide's own do and don't examples. Says which statements cannot be checked. |
 | `/vale:write-guide` | "document our vale rules" | Writes a readable style guide from the config — what blocks, the style choices and why, the vocabulary — in Markdown, MDX, AsciiDoc, reStructuredText, Org or HTML. |
+| `/vale:rule` | "flag this phrase" | Writes one rule for a house convention, with a case that fires and a case that must not, proves it with `vale test`, and counts it on the real corpus before it is enabled. |
+| `/vale:ignore` | "it's flagging our shortcodes" | Takes text that isn't prose — shortcodes, templating tags, generated blocks, one quoted passage — out of Vale's view at the narrowest scope that works, without switching a rule off. |
 | `/vale:commits` | "lint our commit messages" | Scores your recent history against the common conventions, sets up the one it already follows, and adds the hook and the CI check. |
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
