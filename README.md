@@ -31,6 +31,11 @@ The two read-only scripts the skills run — the preview and the rule inventory
 stop to ask before each one. The installer is not: installing software still
 prompts.
 
+This is the proposal an agent produced, sixty seconds after being asked to set
+up Vale on Vale's own documentation site:
+
+![The onboarding proposal as text: a table showing 427 alerts on the first run and 353 with the baseline, three findings in named files, the package, path, vocabulary and unlinted front matter, five style choices with their evidence, the CI change, the five errors that remain, and a list of seven options that are not included.](.github/media/onboard-proposal.png)
+
 Behind the proposal is a script that tries each package against your docs and
 shows a real alert from your own files for every rule that would block. This
 is it on Vale's own documentation site:
@@ -290,10 +295,11 @@ it covers the same ground as prose.
 
 ## About the images
 
-The terminal images in this README are the tools' real output, rendered as
-images: the scripts were run against a clone of
+The terminal images in this README are real output, rendered as images: the
+scripts were run against a clone of
 [vale-cli/docs](https://github.com/vale-cli/docs) and this repository with Vale
-3.27.0. A line too long for the frame ends in an ellipsis; nothing else is
+3.27.0, and the proposal is what an agent following the `onboard` skill wrote
+for that clone. A line too long for the frame ends in an ellipsis; nothing else is
 edited.
 
 ## Development

@@ -83,7 +83,7 @@ It reports facts, not decisions. Then:
   choice to them.
 - Pick the project's name, used for the vocabulary and any own rules: the
   product or repository name in one capitalised word. Not `Vale`, and not a
-  package's name.
+  package's name; where that leaves nothing, `Docs`.
 
 **2. Preview the candidates.** `scripts/preview.sh` builds a throwaway config
 in a temp directory. It needs only `vale` and writes nothing to the
@@ -112,8 +112,8 @@ two at most.
 
 - *Front matter.* Look at where the unknown terms are. Hits on the first lines
   of files are front matter — `id: vscode`, a `slug` — and those are URLs, not
-  prose. Do not accept them and never "fix" them. Leave the fields unlinted
-  with `-i text.frontmatter.id,text.frontmatter.slug`; `vocab` has the config
+  prose. Do not accept them and never "fix" them. Leave unlinted the fields
+  that actually produced hits, such as `-i text.frontmatter.id`; `vocab` has the config
   line this becomes.
 - *Which English.* `vocab`'s `scripts/dictionary.sh -d <path>` counts
   American and British spellings in a second. Keep the result for the options
@@ -163,6 +163,7 @@ What it found, in your files
   "Intellij" in clients/intellij.md:10 — the product is "IntelliJ"
 
 Package:     Microsoft   (Google: 571 alerts, 67 errors — say so to switch)
+Path:        docs/       the path your CI job already lints
 Vocabulary:  41 terms    29 carried over from cspell.json, 12 new: Jilles, Tengo, …
 Not linted:  front matter `id` and `slug` — page URLs, not prose
 
@@ -176,7 +177,8 @@ Style choices — from how the docs are written today; change any
 Other overrides: 1
   Microsoft.Quotes = warning     9 hits, right rule; not blocking yet
 CI:          update .github/workflows/main.yml — advisory, and only on lines
-             a pull request adds, so the backlog never lands on anyone
+             a pull request adds, so the backlog never lands on anyone.
+             Changes: action v1 → v3, trigger gains pull_request.
 Still errors: 5 — the inconsistent spellings above. Real findings; I'd leave
               them for a follow-up fix.
 
@@ -199,6 +201,16 @@ Lead with two or three things it actually caught, picked from the preview's
 examples — a real inconsistency in a named file convinces where a count does
 not. Choose findings the team would agree are mistakes, not the busiest rule.
 Shorten long paths to the file name.
+
+Say in the proposal, not afterwards, what you will change in a file the team
+already owns: the CI workflow's action, trigger and options. If the path you
+lint is not the obvious one, give it a `Path:` line with the reason.
+
+A style-choice line earns its place with a decision or with evidence. Where
+you are leaving a rule as shipped and have nothing to say about it, leave the
+line out. Counts measured in different ways can differ by one or two (a term
+rule and spell check do not flag exactly the same words); report each as
+measured.
 
 Use only evidence the preview gave you: rule counts, examples, term
 locations. Do not go counting headings or grepping for the right spelling to
@@ -223,7 +235,8 @@ with one fact, and switched off. The rules for that list:
   files, no code-comments line. No style guide found, no style-guide line.
 - One fact per line, from something you already ran: the survey, the preview,
   `dictionary.sh -d`. For commit messages, `commits`' `scripts/history.sh
-  -n 20` takes a few seconds; skip the line if it is not available.
+  -n 20` takes a few seconds; skip the line if it is not available, or if the
+  repository has fewer than ten commits to judge by.
 - No explanation and no recommendation. If they ask about one, explain then.
 - Never turn one on because it seems like a good idea. Each is a separate
   yes, and each has its own skill: `ci` for blocking and suggested fixes,
@@ -256,7 +269,8 @@ config, prints the same report:
 sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh -r <path>
 ```
 
-The totals should equal the last preview's. If they do not, a section glob,
+The whole report should equal the last preview's, examples included: the
+script sorts what it reads, so the two can be compared line for line. If they do not, a section glob,
 an override or the ignored scopes is not matching; find out which before
 reporting. Then the exit code, which is what CI sees:
 

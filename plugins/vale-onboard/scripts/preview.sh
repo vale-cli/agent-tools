@@ -145,6 +145,17 @@ case "$list" in
 esac
 files=$(printf '%s\n' "$exts" | awk '{ printf "%s%s .%s", (NR > 1 ? ", " : ""), $1, $2 }')
 
+# Vale lints files concurrently, so alerts arrive in a different order each
+# run. Sorting them by file and line makes the example chosen for a rule, and
+# where a term is "first seen", the same every time -- so a preview and the
+# run that checks it can be compared line for line. vale.exe also writes CRLF
+# when the template was checked out that way. Lines that do not open with a
+# severity are the tail of a match that spanned lines, and are dropped.
+tab=$(printf '\t')
+tidy() {
+	tr -d '\r' <"$1" | grep -E "^(error|warning|suggestion)$tab" | sort -t "$tab" -k3,3 -k4,4n -k2,2
+}
+
 # lint <package> <paths...>: writes $work/<package>.tsv, or explains and fails.
 lint() {
 	pkg=$1
@@ -190,8 +201,7 @@ lint() {
 		sed "s/$esc\[[0-9;]*m//g" "$dir/err.log" | grep -v '^[[:space:]]*$' | tail -n 3 >&2
 		return 1
 	fi
-	# vale.exe writes CRLF when the template was checked out that way.
-	tr -d '\r' <"$dir/raw.tsv" >"$work/$pkg.tsv"
+	tidy "$dir/raw.tsv" >"$work/$pkg.tsv"
 }
 
 # Several packages: one row each, so the choice comes with numbers.
@@ -227,7 +237,7 @@ if [ "$real" -eq 1 ]; then
 		sed "s/$esc\[[0-9;]*m//g" "$work/err.log" | grep -v '^[[:space:]]*$' | tail -n 3 >&2
 		exit 2
 	fi
-	tr -d '\r' <"$work/raw.tsv" >"$out"
+	tidy "$work/raw.tsv" >"$out"
 	[ "$tsv" -eq 1 ] || echo "Config:   the repository's own"
 	pkg=''
 else
