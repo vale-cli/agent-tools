@@ -29,24 +29,29 @@ const plain = (value: string): string =>
 
 /** Vale's own account of why it could not run, from the JSON it prints. */
 const failure = (stdout: string, stderr: string): string => {
-  try {
-    const error = JSON.parse(stdout) as { Code?: string; Text?: string; Path?: string }
+  // The error is JSON under --output=JSON, and it goes to standard error.
+  for (const stream of [stderr, stdout]) {
+    try {
+      const error = JSON.parse(plain(stream)) as { Code?: string; Text?: string; Path?: string }
 
-    if (typeof error.Text === 'string') {
-      const where = error.Path ? ` (${error.Path})` : ''
-      const hint =
-        error.Text === 'no config file found'
-          ? ' This project has no .vale.ini yet: set Vale up first (the vale:onboard or vale:setup skill).'
-          : ''
+      if (typeof error.Text === 'string') {
+        const where = error.Path ? ` (${error.Path})` : ''
+        const hint =
+          error.Text === 'no config file found'
+            ? ' This project has no .vale.ini yet: set Vale up first (the vale:onboard or vale:setup skill).'
+            : ''
 
-      return `Vale could not run: ${error.Code ?? 'error'}: ${plain(error.Text)}${where}.${hint}`
+        return `Vale could not run: ${error.Code ?? 'error'}: ${plain(error.Text)}${where}.${hint}`
+      }
+    } catch {
+      // Not JSON: try the other stream, then fall through to the raw text.
     }
-  } catch {
-    // Not JSON: fall through to whatever it wrote.
   }
 
   return `Vale could not run: ${plain(stderr) || plain(stdout) || 'no output'}`
 }
+
+const some = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? '' : 's'}`
 
 /**
  * Turns Vale's JSON into the lines a model acts on: where, how serious, which
@@ -94,7 +99,7 @@ export const report = (stdout: string, minLevel: Level): string => {
   }
 
   return [
-    `${total} alerts: ${counts.error} errors, ${counts.warning} warnings, ${counts.suggestion} suggestions.`,
+    `${some(total, 'alert')}: ${some(counts.error, 'error')}, ${some(counts.warning, 'warning')}, ${some(counts.suggestion, 'suggestion')}.`,
     'Errors are what the project decided must not ship; warnings and suggestions are advisory.',
     ...lines,
     ...(hidden > 0 ? [`…and ${hidden} more, not listed. Lint a narrower path to see them.`] : []),

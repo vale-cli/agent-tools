@@ -31,6 +31,12 @@ The two read-only scripts the skills run — the preview and the rule inventory
 stop to ask before each one. The installer is not: installing software still
 prompts.
 
+Behind the proposal is a script that tries each package against your docs and
+shows a real alert from your own files for every rule that would block. This
+is it on Vale's own documentation site:
+
+![Terminal output of the preview script. Microsoft reports 427 alerts and Google 598 on 57 files. For Microsoft it then lists the busiest rules and, for each error-level rule, one real alert with its file and line.](.github/media/preview.png)
+
 No plugin support? Any coding agent that can run a shell can do the same:
 
 ```
@@ -106,6 +112,16 @@ needs only `vale` and writes nothing to the repository:
 ```bash
 sh skills/onboard/scripts/preview.sh -p Google docs/
 ```
+
+`/vale:doctor` on a fresh clone, where the styles were never synced — the most
+common reason Vale "stops working":
+
+![Terminal output of the doctor script: nine checks, two marked FAIL because the Microsoft style named in the configuration is not on disk, with "vale sync" given as the fix.](.github/media/doctor.png)
+
+`/vale:commits` scoring this repository's own history before suggesting a
+convention:
+
+![Terminal output of the history script: of the last 20 commits, 19 fail Conventional Commits and 3 fail the "seven rules", so it names SevenRules as the closest convention.](.github/media/commits.png)
 
 Each states its own trigger phrases, checks its prerequisites before touching
 anything, and ends with a report. A skill that can't run Vale says so rather
@@ -189,6 +205,8 @@ carries, and `test`, which runs the test cases beside the project's own rules.
 Because `lint` takes text, Claude can check prose before writing it, including
 a commit message. See [`plugins/vale-tools`](plugins/vale-tools).
 
+![What the lint tool returns for one sentence: six alerts, each with its position, severity, rule and message, and for four of them the exact replacement to make.](.github/media/lint-tool.png)
+
 ### The language server, as an alternative
 
 `vale-lsp` is a second, experimental plugin in this marketplace. It connects
@@ -269,6 +287,14 @@ repository.
 
 For a setup with no skill support, hand it <https://vale.sh/AGENTS.md> instead —
 it covers the same ground as prose.
+
+## About the images
+
+The terminal images in this README are the tools' real output, rendered as
+images: the scripts were run against a clone of
+[vale-cli/docs](https://github.com/vale-cli/docs) and this repository with Vale
+3.27.0. A line too long for the frame ends in an ellipsis; nothing else is
+edited.
 
 ## Development
 

@@ -21,7 +21,7 @@ test('a report gives each alert its place, rule, message and the fix it carries'
   // A spelling suggestion is a guess, so it is not offered as a fix.
   expect(text).toContain("Vale.Spelling: Did you really mean 'teh'?")
   expect(/Vale\.Spelling[^\n]*Fix:/.test(text)).toBe(false)
-  expect(text.split('\n')[0]).toMatch(/^\d+ alerts: \d+ errors, \d+ warnings, \d+ suggestions\.$/)
+  expect(text.split('\n')[0]).toMatch(/^\d+ alerts?: \d+ errors?, \d+ warnings?, \d+ suggestions?\.$/)
 })
 
 test('a floor leaves out what is below it', () => {
@@ -61,8 +61,9 @@ test('lint sends a draft on stdin and names what it stands for', async ($, on) =
 test('lint says what to do when the project has no configuration', async ($, on) => {
   on('tool.register', (_, e) => ({ value: { tool: `mcp__vale-tools__${e.name}` } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
+  // Where Vale 3.27.0 really writes it: standard error, pretty-printed.
   on('process.run', () =>
-    ran('{"Line":0,"Path":"","Text":"no config file found","Code":"E100","Span":0}', 2),
+    ran('', 2, '{\n  "Line": 0,\n  "Path": "",\n  "Text": "no config file found",\n  "Code": "E100",\n  "Span": 0\n}\n'),
   )
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
 
