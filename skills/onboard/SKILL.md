@@ -83,7 +83,7 @@ It reports facts, not decisions. Then:
   choice to them.
 - Pick the project's name, used for the vocabulary and any own rules: the
   product or repository name in one capitalised word. Not `Vale`, and not a
-  package's name.
+  package's name; where that leaves nothing, `Docs`.
 
 **2. Preview the candidates.** `scripts/preview.sh` builds a throwaway config
 in a temp directory. It needs only `vale` and writes nothing to the
@@ -112,8 +112,8 @@ two at most.
 
 - *Front matter.* Look at where the unknown terms are. Hits on the first lines
   of files are front matter — `id: vscode`, a `slug` — and those are URLs, not
-  prose. Do not accept them and never "fix" them. Leave the fields unlinted
-  with `-i text.frontmatter.id,text.frontmatter.slug`; `vocab` has the config
+  prose. Do not accept them and never "fix" them. Leave unlinted the fields
+  that actually produced hits, such as `-i text.frontmatter.id`; `vocab` has the config
   line this becomes.
 - *Which English.* `vocab`'s `scripts/dictionary.sh -d <path>` counts
   American and British spellings in a second. Keep the result for the options
@@ -163,6 +163,7 @@ What it found, in your files
   "Intellij" in clients/intellij.md:10 — the product is "IntelliJ"
 
 Package:     Microsoft   (Google: 571 alerts, 67 errors — say so to switch)
+Path:        docs/       the path your CI job already lints
 Vocabulary:  41 terms    29 carried over from cspell.json, 12 new: Jilles, Tengo, …
 Not linted:  front matter `id` and `slug` — page URLs, not prose
 
@@ -175,13 +176,16 @@ Style choices — from how the docs are written today; change any
 
 Other overrides: 1
   Microsoft.Quotes = warning     9 hits, right rule; not blocking yet
-CI:          update .github/workflows/main.yml — advisory, and only on lines
-             a pull request adds, so the backlog never lands on anyone
+Where it runs — change any
+  GitHub Action  update .github/workflows/main.yml — advisory, and only on
+                 lines a pull request adds, so the backlog lands on nobody.
+                 Changes: action v1 → v3, trigger gains pull_request.
+  pre-commit     add Vale to .pre-commit-config.yaml — errors only
 Still errors: 5 — the inconsistent spellings above. Real findings; I'd leave
               them for a follow-up fix.
 
 Not included — say the word for any of these
-  Blocking CI        5 errors would fail it today; fix those first
+  Blocking checks    5 errors would fail them today; fix those first
   One-click fixes    suggested changes on pull requests (not from forks)
   French docs        docs/fr (38 files) are skipped; needs a dictionary
   Code comments      212 .go, 40 .py files
@@ -200,6 +204,16 @@ examples — a real inconsistency in a named file convinces where a count does
 not. Choose findings the team would agree are mistakes, not the busiest rule.
 Shorten long paths to the file name.
 
+Say in the proposal, not afterwards, what you will change in a file the team
+already owns: the CI workflow's action, trigger and options. If the path you
+lint is not the obvious one, give it a `Path:` line with the reason.
+
+A style-choice line earns its place with a decision or with evidence. Where
+you are leaving a rule as shipped and have nothing to say about it, leave the
+line out. Counts measured in different ways can differ by one or two (a term
+rule and spell check do not flag exactly the same words); report each as
+measured.
+
 Use only evidence the preview gave you: rule counts, examples, term
 locations. Do not go counting headings or grepping for the right spelling to
 decorate a line; a hit count is enough to justify a default.
@@ -210,6 +224,22 @@ Name choices the way the team would — "title case", not `capitalization` — a
 keep rule names for lines with no plainer description. A "yes" accepts all of
 it; "use Google" or "keep We" changes one line and you re-preview. Do not
 start over, and do not re-ask what was already accepted.
+
+**Where it runs is part of the baseline, not an afterthought.** A config that
+only runs when someone remembers to type `vale` is not adopted. `ci`'s
+`scripts/ci.sh detect` says what the repository has; propose from that:
+
+- *A GitHub repository:* the action, on by default. Update a workflow that
+  already runs Vale; otherwise add `.github/workflows/vale.yml`.
+- *A repository that already uses pre-commit:* the Vale entry, on by default.
+- *No pre-commit here:* list it under "Not included" — "pre-commit hook:
+  stops a commit with errors; each contributor installs it once" — and do not
+  introduce it unasked.
+- *Not on GitHub:* say so, leave the action out, and offer the generic runner
+  command from `ci` under "Not included".
+
+Generate the files with `ci.sh action` and `ci.sh pre-commit` at the apply
+step; do not write the YAML from memory.
 
 Default CI to advisory. A job that is red on its first run teaches the team to
 ignore it.
@@ -223,10 +253,12 @@ with one fact, and switched off. The rules for that list:
   files, no code-comments line. No style guide found, no style-guide line.
 - One fact per line, from something you already ran: the survey, the preview,
   `dictionary.sh -d`. For commit messages, `commits`' `scripts/history.sh
-  -n 20` takes a few seconds; skip the line if it is not available.
+  -n 20` takes a few seconds; skip the line if it is not available, or if the
+  repository has fewer than ten commits to judge by.
 - No explanation and no recommendation. If they ask about one, explain then.
 - Never turn one on because it seems like a good idea. Each is a separate
-  yes, and each has its own skill: `ci` for blocking and suggested fixes,
+  yes, and each has its own skill: `ci` for blocking, suggested fixes and a
+  pre-commit hook,
   `setup` for translations and code comments, `vocab` for dictionaries,
   `commits`, `from-guide`, `write-guide`.
 - Leave a line out once it is done. A repository that already has a hook
@@ -246,8 +278,9 @@ That is a better proposal than a clean number.
 - the overrides, each with its reason (`triage`)
 - the style choices and any own rules, with
   `vale test --coverage styles/<Project>` passing (`tune`)
-- the CI change — update a job that already runs Vale rather than adding a
-  second, and say what you changed about its trigger (`ci`)
+- where it runs — the workflow and, if chosen, the pre-commit entry, from
+  `ci`'s `scripts/ci.sh`. Update a job that already runs Vale rather than
+  adding a second, and say what you changed about its trigger (`ci`)
 
 **6. Verify against the preview.** The same script, pointed at the real
 config, prints the same report:
@@ -256,7 +289,8 @@ config, prints the same report:
 sh ${CLAUDE_SKILL_DIR}/scripts/preview.sh -r <path>
 ```
 
-The totals should equal the last preview's. If they do not, a section glob,
+The whole report should equal the last preview's, examples included: the
+script sorts what it reads, so the two can be compared line for line. If they do not, a section glob,
 an override or the ignored scopes is not matching; find out which before
 reporting. Then the exit code, which is what CI sees:
 
@@ -294,6 +328,23 @@ most useful thing to do next — usually "fix the 5 remaining errors, then CI
 can block". Not a menu: the options were in the proposal, and repeating them
 here is noise. If they picked one — the editor, say — do it or point to it
 now (<https://docs.vale.sh/guides/lsp.md> for the language server).
+
+## If the proposal comes from the setup pane
+
+The `vale-onboard` plugin draws this proposal as a pane: the person picks the
+package, what each rule does and which words to accept there, and presses
+Apply, which puts the result in the prompt as a message beginning "Apply this
+Vale baseline". That message is the yes. Do not re-preview the candidates or
+re-propose; go to the apply step with exactly what it lists.
+
+- Write each override it names, with the reason it gives as the comment.
+- Accept only the words it lists. The ones it says were left unticked are
+  findings: mention them at the end, do not add them.
+- Its "Expected after applying" counts are what step 6 should match.
+- "Where it runs" names the checks to add and whether they block. Add
+  exactly those with `ci`'s `scripts/ci.sh`; where it says nowhere, add none.
+- Anything under "Also set up" is a yes to that option; use its skill after
+  the baseline is committed.
 
 ## If it is interrupted
 

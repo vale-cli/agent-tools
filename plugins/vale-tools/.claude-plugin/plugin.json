@@ -1,0 +1,13 @@
+{
+  "name": "vale-tools",
+  "version": "0.1.0",
+  "description": "Vale as tools Claude can call: lint a draft or a file against the project's own rules, and run a style's test cases, without a shell command. Experimental.",
+  "author": {
+    "name": "Joseph Kato",
+    "url": "https://vale.sh"
+  },
+  "homepage": "https://vale.sh/skills",
+  "repository": "https://github.com/vale-cli/agent-tools",
+  "license": "MIT",
+  "keywords": ["vale", "prose", "linting", "tools"]
+}

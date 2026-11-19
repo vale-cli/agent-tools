@@ -1,0 +1,14 @@
+{
+  "name": "vale-onboard",
+  "version": "0.1.0",
+  "description": "A pane for setting up Vale: compare style packages against your docs, decide what each noisy rule does, tick the words that are right, and hand the result to Claude to apply. Experimental.",
+  "author": {
+    "name": "Joseph Kato",
+    "url": "https://vale.sh"
+  },
+  "homepage": "https://vale.sh/skills",
+  "repository": "https://github.com/vale-cli/agent-tools",
+  "license": "MIT",
+  "keywords": ["vale", "prose", "linting", "onboarding"],
+  "types": "./types/index.d.ts"
+}

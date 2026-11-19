@@ -81,7 +81,9 @@ for conv in Core $convs; do
 done
 
 echo
-if [ -z "$best" ]; then
+if [ "$total" -lt 10 ]; then
+	echo "Too few commits ($total) to say what this repository's convention is. Ask; do not infer."
+elif [ -z "$best" ]; then
 	echo "Closest: none scored."
 elif [ $((bestfail * 4)) -le "$total" ]; then
 	echo "Closest: $best — $((total - bestfail)) of $total already pass. Enforcing it confirms what the team does."

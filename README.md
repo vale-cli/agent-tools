@@ -31,6 +31,17 @@ The two read-only scripts the skills run — the preview and the rule inventory
 stop to ask before each one. The installer is not: installing software still
 prompts.
 
+This is the proposal an agent produced, sixty seconds after being asked to set
+up Vale on Vale's own documentation site:
+
+![The onboarding proposal as text: a table showing 427 alerts on the first run and 353 with the baseline, three findings in named files, the package, path, vocabulary and unlinted front matter, five style choices with their evidence, the CI change, the five errors that remain, and a list of seven options that are not included.](.github/media/onboard-proposal.png)
+
+Behind the proposal is a script that tries each package against your docs and
+shows a real alert from your own files for every rule that would block. This
+is it on Vale's own documentation site:
+
+![Terminal output of the preview script. Microsoft reports 427 alerts and Google 598 on 57 files. For Microsoft it then lists the busiest rules and, for each error-level rule, one real alert with its file and line.](.github/media/preview.png)
+
 No plugin support? Any coding agent that can run a shell can do the same:
 
 ```
@@ -97,7 +108,7 @@ the task fits — or call them directly.
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
 | `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. Imports a word list you already keep for cspell or another spell checker. Tells you whether the docs lean American or British, sets up a regional dictionary if you want one enforced, and installs dictionaries for other languages. |
-| `/vale:ci` | "run this on PRs" | Wires Vale into GitHub Actions, pre-commit, or another runner — and says whether it blocks. |
+| `/vale:ci` | "run this on PRs" | Sees what the repository already has, then generates the GitHub Actions workflow or the pre-commit entry — advisory or blocking — from a script, not from memory. Asks what it should look at (new lines, changed files, everything), what to report and when to fail. Covers other runners too. |
 
 `onboard` ships a small script, `skills/onboard/scripts/preview.sh`, that you
 can also run by hand to see what a package would report before adopting it. It
@@ -106,6 +117,16 @@ needs only `vale` and writes nothing to the repository:
 ```bash
 sh skills/onboard/scripts/preview.sh -p Google docs/
 ```
+
+`/vale:doctor` on a fresh clone, where the styles were never synced — the most
+common reason Vale "stops working":
+
+![Terminal output of the doctor script: nine checks, two marked FAIL because the Microsoft style named in the configuration is not on disk, with "vale sync" given as the fix.](.github/media/doctor.png)
+
+`/vale:commits` scoring this repository's own history before suggesting a
+convention:
+
+![Terminal output of the history script: of the last 20 commits, 19 fail Conventional Commits and 3 fail the "seven rules", so it names SevenRules as the closest convention.](.github/media/commits.png)
 
 Each states its own trigger phrases, checks its prerequisites before touching
 anything, and ends with a report. A skill that can't run Vale says so rather
@@ -169,6 +190,33 @@ A project's own `commit-msg` hook does this for people, but it is installed per
 clone, and an assistant's checkout usually has not run the project's setup.
 This gives the assistant's commits the same check. Without that section in the
 config it does nothing.
+
+### Onboarding as a pane
+
+`vale-onboard` is a third plugin in this marketplace, also experimental. It
+draws the onboarding proposal beside the chat: a button per style package with
+its alert count, the before and after table, a button on each rule that makes
+it quieter, the unknown words to tick, where Vale should run, and Apply. For a
+GitHub Action you choose what it looks at on a pull request (only new lines,
+the changed files, or everything), what it reports and when it fails, and the
+workflow is shown as you press. `/vale-checks` opens that part alone in a
+repository that already has Vale. Every press re-runs the
+preview, so the numbers are always what you would get. Apply writes nothing
+itself — it puts the chosen baseline in the prompt for Claude to apply through
+the `onboard` skill. See [`plugins/vale-onboard`](plugins/vale-onboard).
+
+### Vale as tools
+
+`vale-tools` is a fourth plugin, also experimental. It gives Claude two tools
+it can call without a shell command: `lint`, which checks a draft or a file
+against the project's rules and returns each alert with the fix its rule
+carries, and `test`, which runs the test cases beside the project's own rules.
+Because `lint` takes text, Claude can check prose before writing it, including
+a commit message. In the desktop app it also adds "Check with Vale" and "Add
+to Vale vocabulary" to the right-click menu on selected text. See
+[`plugins/vale-tools`](plugins/vale-tools).
+
+![What the lint tool returns for one sentence: six alerts, each with its position, severity, rule and message, and for four of them the exact replacement to make.](.github/media/lint-tool.png)
 
 ### The language server, as an alternative
 
@@ -250,6 +298,15 @@ repository.
 
 For a setup with no skill support, hand it <https://vale.sh/AGENTS.md> instead —
 it covers the same ground as prose.
+
+## About the images
+
+The terminal images in this README are real output, rendered as images: the
+scripts were run against a clone of
+[vale-cli/docs](https://github.com/vale-cli/docs) and this repository with Vale
+3.27.0, and the proposal is what an agent following the `onboard` skill wrote
+for that clone. A line too long for the frame ends in an ellipsis; nothing else is
+edited.
 
 ## Development
 

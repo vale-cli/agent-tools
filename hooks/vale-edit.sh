@@ -124,7 +124,10 @@ emit() {
 
 # The template renders one alert per line -- severity, line, check, message,
 # tab-separated -- so the parsing below and the format are shipped together.
-tmpl=$(dirname "$0")/vale-hook.tmpl
+# Resolved to an absolute path: Vale is started from the configuration's
+# directory below, where a path relative to wherever this script was called
+# from would point at nothing.
+tmpl=$(cd "$(dirname "$0")" 2>/dev/null && pwd)/vale-hook.tmpl
 [ -f "$tmpl" ] || exit 0
 
 # --no-exit because error-level alerts are the case we want to report, and

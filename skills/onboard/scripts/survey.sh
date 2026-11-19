@@ -85,6 +85,11 @@ other=$(grep -E '(^|/)(\.markdownlint(-cli2)?\.(json|jsonc|ya?ml|cjs|mjs)|\.mark
 echo "Other linters: ${other:-none}"
 
 # ---- CI and hooks
+if git remote -v 2>/dev/null | grep -q 'github\.com' || grep -q '^\.github/' "$list"; then
+	echo "GitHub:        yes"
+else
+	echo "GitHub:        no sign of it"
+fi
 ci=''
 for f in $(grep -E '^\.github/workflows/[^ ]*\.ya?ml$' "$list"); do
 	if grep -q -i -E 'vale-action@|run:.*(^|[^a-z-])vale( |$)' "$f" 2>/dev/null; then
