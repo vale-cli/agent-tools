@@ -2,6 +2,8 @@ import { expect, test } from 'claude-code/testing'
 
 import { report } from '../hooks/register'
 
+const MENU = { plugin: 'vale-tools', surface: 'desktop', component: 'ContextMenu' } as const
+
 const LINT = 'mcp__vale-tools__lint'
 const TEST = 'mcp__vale-tools__test'
 
@@ -103,4 +105,33 @@ test('test runs the cases for one style and passes the verdict on', async ($, on
   expect(calls[1]).toEqual(['vale', 'test'])
   expect(failed.isError).toBe(true)
   expect(String(failed.text)).toContain('1 failed')
+})
+
+test('a selected word gets both rows, a sentence only the check, and nothing gets none', async ($, on) => {
+  const filled: string[] = []
+
+  on('prompt.fill', (_, e) => {
+    filled.push(e.text)
+
+    return { isFilled: true, text: e.text, cursor: e.text.length }
+  })
+
+  const word = await $.ui.mount({ ...MENU, props: { selection: { text: 'Tengo' } } })
+
+  await word.press({ key: 'vale-check' })
+  await word.press({ key: 'vale-accept' })
+  expect(filled[0]).toBe('Check this with Vale and tell me what it flags:\n> Tengo\n')
+  expect(filled[1]).toContain('Add "Tengo" to this project\'s Vale vocabulary')
+  await word.unmount()
+
+  const sentence = await $.ui.mount({ ...MENU, props: { selection: { text: 'In order to utilize it.' } } })
+
+  expect(await sentence.find({ key: 'vale-check' })).toBeDefined()
+  expect(await sentence.find({ key: 'vale-accept' })).toBeUndefined()
+  await sentence.unmount()
+
+  const nothing = await $.ui.mount({ ...MENU, props: {} })
+
+  expect(await nothing.find({ type: 'Button' })).toBeUndefined()
+  await nothing.unmount()
 })

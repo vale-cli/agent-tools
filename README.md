@@ -208,7 +208,9 @@ it can call without a shell command: `lint`, which checks a draft or a file
 against the project's rules and returns each alert with the fix its rule
 carries, and `test`, which runs the test cases beside the project's own rules.
 Because `lint` takes text, Claude can check prose before writing it, including
-a commit message. See [`plugins/vale-tools`](plugins/vale-tools).
+a commit message. In the desktop app it also adds "Check with Vale" and "Add
+to Vale vocabulary" to the right-click menu on selected text. See
+[`plugins/vale-tools`](plugins/vale-tools).
 
 ![What the lint tool returns for one sentence: six alerts, each with its position, severity, rule and message, and for four of them the exact replacement to make.](.github/media/lint-tool.png)
 

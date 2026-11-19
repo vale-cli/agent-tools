@@ -278,6 +278,11 @@ const recount = async ($: EngineInterface) => {
     note: 'Nothing is written until you apply.',
     now: got.counts,
   }))
+
+  // One line in the status bar, so the count stays in view with the pane shut.
+  if (got.counts !== null) {
+    $.ui.status(`Vale preview: ${got.counts.errors} errors · ${got.counts.total} alerts`)
+  }
 }
 
 /** Loads one package's rules and unknown words, with the quiet defaults ticked. */
@@ -375,7 +380,7 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    const { Box, Button, Text } = $.ui.resolve(e)
+    const { Box, Button, Progress, Text } = $.ui.resolve(e)
     const p = await read($, proposal)
     const isBusy = p.status === 'working'
     const width = Math.max(20, e.props.bodyColumns ?? 60)
@@ -387,7 +392,11 @@ export const register: Register = on => {
       return (
         <Box flexDirection="column">
           <Text bold>{TITLE}</Text>
-          <Text dimColor={p.status !== 'failed'}>{p.note}</Text>
+          {p.status === 'working' ? (
+            <Progress label={p.note} />
+          ) : (
+            <Text dimColor={p.status !== 'failed'}>{p.note}</Text>
+          )}
           {p.status !== 'working' && (
             <Box marginTop={1}>
               <Button
@@ -407,7 +416,7 @@ export const register: Register = on => {
         <Text bold>
           Vale baseline for {p.path} ({p.files})
         </Text>
-        <Text dimColor>{p.note}</Text>
+        {isBusy ? <Progress label={p.note} /> : <Text dimColor>{p.note}</Text>}
 
         <Box marginTop={1} flexDirection="row" flexWrap="wrap" columnGap={1}>
           <Text>Package</Text>
@@ -430,6 +439,14 @@ export const register: Register = on => {
             <Text mono bold>
               {row('With choices', p.now)}
             </Text>
+          )}
+          {p.now !== null && p.first.total > 0 && (
+            <Progress
+              label="Alerts left"
+              value={p.now.total}
+              max={p.first.total}
+              valueText={`${p.now.total} of ${p.first.total}`}
+            />
           )}
           {p.now !== null && (
             <Text dimColor>
@@ -532,12 +549,15 @@ export const register: Register = on => {
         <Box marginTop={1} flexDirection="row" columnGap={1}>
           <Button
             key="apply"
-            label="Apply"
             variant="primary"
             onPress={async () => {
               const ready = await read($, proposal)
 
               const filled = await $.prompt.fill({ text: applyText(ready) })
+
+              if (filled.isFilled) {
+                $.ui.status(undefined)
+              }
 
               $.ui.toast(
                 filled.isFilled
@@ -545,7 +565,9 @@ export const register: Register = on => {
                   : 'Could not reach the prompt. Close any open dialog and press Apply again.',
               )
             }}
-          />
+          >
+            Apply <Text dimColor>puts it in the prompt</Text>
+          </Button>
           <Button key="again" label="Start over" onPress={() => start($, p.path)} />
         </Box>
       </Box>

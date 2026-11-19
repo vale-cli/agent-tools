@@ -12,7 +12,8 @@ It tries Microsoft and Google against your docs in a temp directory, opens on
 the quieter one, and shows:
 
 - **Package** — a button per package with its alert count. Press one to switch.
-- **The table** — the first run, and the run with your choices so far.
+- **The table** — the first run, and the run with your choices so far, with a
+  bar for how much of the first run is left.
 - **Rules** — error-level rules first, then the busiest. Press a rule's button
   to make it quieter: an error becomes a warning, then a suggestion, then off,
   then back to how it shipped. Error-level rules show a real alert from your
@@ -27,7 +28,8 @@ the quieter one, and shows:
   be installed alongside.
 
 Every press re-runs the preview, so the "With choices" row is a real count, not
-an estimate. Nothing in the repository changes until Claude applies it.
+an estimate. The current count also sits in the status line, so it stays in
+view with the pane closed. Nothing in the repository changes until Claude applies it.
 
 ## Experimental
 

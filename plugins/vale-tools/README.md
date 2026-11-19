@@ -14,6 +14,10 @@ Vale as tools Claude can call directly, with no shell command in between.
 
 Both only read.
 
+In the desktop app it also adds two rows to the right-click menu on selected
+text: **Check with Vale**, and, for a single word, **Add to Vale vocabulary**.
+Each puts a request in the prompt for you to send; neither acts by itself.
+
 ## Why a tool and not a command
 
 - **A draft can be checked before it is written.** `lint` takes text, so Claude

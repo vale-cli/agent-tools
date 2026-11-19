@@ -158,6 +158,12 @@ const test = async ($: EngineInterface, input: Record<string, unknown>) => {
   }
 }
 
+/** A selection worth a row: some prose, not a page of it. */
+const isPhrase = (selected: string): boolean => selected.trim().length > 0 && selected.length <= 2000
+
+/** A single word or name, which is what a vocabulary holds. */
+const isTerm = (selected: string): boolean => /^[\p{L}][\p{L}\p{N}'’.-]{1,40}$/u.test(selected.trim())
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.tool.register({
@@ -190,6 +196,41 @@ export const register: Register = on => {
     })
 
     return next(e)
+  })
+
+  // In the desktop app's right-click menu: check a selection, or accept a
+  // selected word. Both put a request in the prompt; neither acts by itself.
+  on('ui.render', { component: 'ContextMenu' }, ($, e, next) => {
+    const selected = e.props.selection?.text ?? ''
+
+    if (!isPhrase(selected)) {
+      return next(e)
+    }
+
+    const { Box, Button, Text } = $.ui.resolve(e)
+    const ask = (text: string) => $.prompt.fill({ text, mode: 'insert' })
+    const quoted = selected.trim().replace(/^/gm, '> ')
+
+    return (
+      <Box flexDirection="column">
+        <Button
+          key="vale-check"
+          onPress={() => ask(`Check this with Vale and tell me what it flags:\n${quoted}\n`)}
+        >
+          Check with Vale <Text dimColor>Adds to the prompt</Text>
+        </Button>
+        {isTerm(selected) && (
+          <Button
+            key="vale-accept"
+            onPress={() =>
+              ask(`Add "${selected.trim()}" to this project's Vale vocabulary (vale:vocab), if it is spelled the way we write it.\n`)
+            }
+          >
+            Add to Vale vocabulary <Text dimColor>Adds to the prompt</Text>
+          </Button>
+        )}
+      </Box>
+    )
   })
 
   on('tool.run', { tool: LINT }, ($, e) => lint($, e as Record<string, unknown>))
