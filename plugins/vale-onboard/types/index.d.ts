@@ -37,8 +37,26 @@ export type Checks = {
   githubAction: boolean
   /** An entry in .pre-commit-config.yaml: on where pre-commit is already used. */
   preCommit: boolean
-  /** Fail on errors, rather than report and pass. */
-  isBlocking: boolean
+  /** How much of a pull request is reported. */
+  scope: Scope
+  /** The lowest severity reported. */
+  report: Level
+  /** When the workflow fails. `never` is advisory. */
+  failOn: FailOn
+  /** Review comments with one-click fixes, rather than annotations. */
+  reviewComments: boolean
+}
+
+export type Scope = 'new-lines' | 'changed-files' | 'everything'
+
+export type FailOn = 'never' | 'error' | 'warning'
+
+/** The files the choices would produce, and what the generator says about them. */
+export type CheckPreview = {
+  workflow: string
+  workflowNotes: string[]
+  hook: string
+  hookNotes: string[]
 }
 
 /** Things Vale could also do here. Named in the pane, off until ticked. */
@@ -62,7 +80,10 @@ export type Proposal = {
   terms: Term[]
   /** Leave front matter `id` and `slug` fields unlinted: they are URLs. */
   skipsFrontMatter: boolean
+  /** Which pane last started work: the whole baseline, or only where Vale runs. */
+  view: 'onboard' | 'checks'
   checks: Checks
+  preview: CheckPreview
   /** What the survey found, so the pane can say why a check starts on or off. */
   isOnGitHub: boolean
   usesPreCommit: boolean

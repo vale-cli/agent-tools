@@ -24,24 +24,58 @@ files, so the YAML is not written from memory:
 
 ```bash
 sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh detect
-sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh action -f docs            # advisory
-sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh action -b -f docs         # blocking
+sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh action -f docs                      # the defaults
+sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh action -s changed-files -x error -f docs
 sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh pre-commit -f docs
 ```
 
 `detect` reports whether this is a GitHub repository, any workflow that
 already runs Vale with its action version, mode and trigger, and whether
 pre-commit is in use and has Vale in it. `action` prints a workflow for
-`.github/workflows/vale.yml`; it adds the Asciidoctor or docutils step when
-the config lints those formats, `-b` makes it blocking, `-r` posts review
-comments with one-click fixes, and `-f` names what to lint. `pre-commit`
-prints a whole `.pre-commit-config.yaml`, or only the entry to add when one
-exists, pinned to the installed Vale.
+`.github/workflows/vale.yml`, adding the Asciidoctor or docutils step when
+the config lints those formats. `pre-commit` prints a whole
+`.pre-commit-config.yaml`, or only the entry to add when one exists, pinned to
+the installed Vale. Each also says, in a line, what the result will do.
 
 It prints and never writes. Read what it printed, say what will change, then
 save it. `${CLAUDE_SKILL_DIR}` is the directory this file is in; if it reaches
 you as literal text, use that path. The sections below explain what the
 output means and cover runners the script does not.
+
+## Ask how it should behave
+
+A check has four settings a team has opinions about. Ask them, in plain words,
+with the default first — as multiple-choice questions if your client has a
+way to ask those, otherwise as one short message. Skip any the user already
+answered, and do not ask about flags by name.
+
+| Ask | Choices (default first) | Flag |
+|---|---|---|
+| What should it look at on a pull request? | Only the lines it adds · every alert in the files it touches · everything, every time | `-s new-lines` · `changed-files` · `everything` |
+| What should it report? | Every alert · warnings and errors · errors only | `-l suggestion` · `warning` · `error` |
+| When should it fail? | Never, only report · on errors · on warnings too | `-x never` · `error` · `warning` |
+| How should it show up? | Annotations on the check · review comments with one-click fixes | (none) · `-r` |
+
+What to say about each, when asked:
+
+- **Only added lines** is what lets a repository with a backlog adopt Vale:
+  nobody is told about text they did not write. **Changed files** suits a
+  team working the backlog down as they go: touch a page, clean the page.
+  **Everything** shows the whole backlog on every pull request, and is rarely
+  wanted except for a small, already-clean docs set.
+- **Review comments** cannot be posted on pull requests from forks, so an open
+  source project usually keeps annotations.
+- **Failing on warnings** only makes sense once the warnings are at zero.
+
+For a pre-commit hook the scope is not a choice: it only ever sees the files
+being committed. Its two settings are the level that stops a commit (`-l`,
+errors by default) and whether it runs before each commit or before a push
+(`-P`).
+
+The `vale-onboard` plugin asks the same four as buttons, in its setup pane and
+in `/vale-checks`, with the generated file shown as each one changes. If a
+message arrives beginning "Set up where Vale runs in this repository", those
+are the answers: run the commands it gives and do not ask again.
 
 Which to offer:
 

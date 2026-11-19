@@ -108,7 +108,7 @@ the task fits — or call them directly.
 | `/vale:fix` | "make vale pass" | Fixes error-level alerts a file at a time, applying the replacement each rule defines. One pull request per file. |
 | `/vale:triage` | "where do we start" | Turns a first run on an existing corpus into a decision per rule — fix, keep, downgrade, or switch off — and writes the agreed ones into `.vale.ini` with the reason. |
 | `/vale:vocab` | "stop flagging our product name" | Adds project terms to a vocabulary so spell check accepts them. Imports a word list you already keep for cspell or another spell checker. Tells you whether the docs lean American or British, sets up a regional dictionary if you want one enforced, and installs dictionaries for other languages. |
-| `/vale:ci` | "run this on PRs" | Sees what the repository already has, then generates the GitHub Actions workflow or the pre-commit entry — advisory or blocking — from a script, not from memory. Covers other runners too. |
+| `/vale:ci` | "run this on PRs" | Sees what the repository already has, then generates the GitHub Actions workflow or the pre-commit entry — advisory or blocking — from a script, not from memory. Asks what it should look at (new lines, changed files, everything), what to report and when to fail. Covers other runners too. |
 
 `onboard` ships a small script, `skills/onboard/scripts/preview.sh`, that you
 can also run by hand to see what a package would report before adopting it. It
@@ -196,8 +196,11 @@ config it does nothing.
 `vale-onboard` is a third plugin in this marketplace, also experimental. It
 draws the onboarding proposal beside the chat: a button per style package with
 its alert count, the before and after table, a button on each rule that makes
-it quieter, the unknown words to tick, where Vale should run (a GitHub Action,
-a pre-commit hook, blocking or not), and Apply. Every press re-runs the
+it quieter, the unknown words to tick, where Vale should run, and Apply. For a
+GitHub Action you choose what it looks at on a pull request (only new lines,
+the changed files, or everything), what it reports and when it fails, and the
+workflow is shown as you press. `/vale-checks` opens that part alone in a
+repository that already has Vale. Every press re-runs the
 preview, so the numbers are always what you would get. Apply writes nothing
 itself — it puts the chosen baseline in the prompt for Claude to apply through
 the `onboard` skill. See [`plugins/vale-onboard`](plugins/vale-onboard).

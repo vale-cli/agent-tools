@@ -9,13 +9,14 @@
 set -eu
 
 here=$(cd "$(dirname "$0")" && pwd)
-src=$here/../../skills/onboard/scripts
+skills=$here/../../skills
 status=0
-for f in preview.sh preview.tmpl survey.sh; do
+for f in onboard/scripts/preview.sh onboard/scripts/preview.tmpl onboard/scripts/survey.sh ci/scripts/ci.sh; do
+	name=$(basename "$f")
 	if [ "${1:-}" = --check ]; then
-		cmp -s "$src/$f" "$here/scripts/$f" || { echo "sync.sh: scripts/$f differs from skills/onboard/scripts/$f" >&2; status=1; }
+		cmp -s "$skills/$f" "$here/scripts/$name" || { echo "sync.sh: scripts/$name differs from skills/$f" >&2; status=1; }
 	else
-		cp "$src/$f" "$here/scripts/$f"
+		cp "$skills/$f" "$here/scripts/$name"
 	fi
 done
 [ "$status" -eq 0 ] && [ "${1:-}" = --check ] && echo "in sync"

@@ -1,6 +1,15 @@
 import { expect, test } from 'claude-code/testing'
 
-import { applyText, nextChoice, parse, previewArgs } from '../hooks/register'
+import {
+  actionArgs,
+  after,
+  applyChecksText,
+  applyText,
+  hookArgs,
+  nextChoice,
+  parse,
+  previewArgs,
+} from '../hooks/register'
 import type { Proposal, Rule } from '../types'
 
 const PANE = {
@@ -91,7 +100,16 @@ const CHOSEN: Proposal = {
     { word: 'VSCode', count: 4, where: 'docs/e.md:16', isAccepted: false },
   ],
   skipsFrontMatter: true,
-  checks: { githubAction: true, preCommit: false, isBlocking: false },
+  view: 'onboard',
+  checks: {
+    githubAction: true,
+    preCommit: false,
+    scope: 'new-lines',
+    report: 'suggestion',
+    failOn: 'never',
+    reviewComments: false,
+  },
+  preview: { workflow: '', workflowNotes: [], hook: '', hookNotes: [] },
   isOnGitHub: true,
   usesPreCommit: false,
   extras: { codeComments: true, commitMessages: false, writtenGuide: false },
@@ -120,14 +138,45 @@ test('what goes to Claude names every choice and nothing that was left alone', (
   expect(text).toContain('left unticked (findings, not vocabulary): VSCode')
   expect(text).toContain('Microsoft.We = NO (47 hits')
   expect(text).toContain('Microsoft.Quotes = warning (9 hits; was error)')
-  expect(text).toContain('Where it runs: a GitHub Actions workflow (advisory;')
+  expect(text).toContain('a GitHub Actions workflow: new lines only; reports every alert; fails never (advisory).')
+  expect(text).toContain('ci.sh action -f docs')
   expect(text.includes('pre-commit hook')).toBe(false)
   expect(text).toContain('Also set up: Code comments')
   expect(
-    applyText({ ...CHOSEN, checks: { githubAction: false, preCommit: false, isBlocking: false } }),
-  ).toContain('Where it runs: nowhere automatic')
+    applyText({ ...CHOSEN, checks: { ...CHOSEN.checks, githubAction: false } }),
+  ).toContain('nowhere automatic')
   expect(text.includes('Microsoft.Passive')).toBe(false)
 })
+
+test('the choices about a pull request become the generator\'s flags', () => {
+  const strict: Proposal = {
+    ...CHOSEN,
+    checks: {
+      githubAction: true,
+      preCommit: true,
+      scope: 'changed-files',
+      report: 'warning',
+      failOn: 'error',
+      reviewComments: true,
+    },
+  }
+
+  expect(actionArgs(CHOSEN)).toEqual(['action', '-f', 'docs'])
+  expect(actionArgs(strict)).toEqual(['action', '-s', 'changed-files', '-l', 'warning', '-x', 'error', '-r', '-f', 'docs'])
+  expect(hookArgs(strict)).toEqual(['pre-commit', '-f', 'docs'])
+  // The repository root needs no -f.
+  expect(actionArgs({ ...CHOSEN, path: '.' })).toEqual(['action'])
+
+  const text = applyChecksText(strict)
+
+  expect(text).toContain('changed files, whole; reports warnings and errors; fails on errors; as review comments.')
+  expect(text).toContain('ci.sh action -s changed-files -l warning -x error -r -f docs')
+  expect(text).toContain('ci.sh pre-commit -f docs')
+  expect(after(['a', 'b', 'c'], 'c')).toBe('a')
+})
+
+const WORKFLOW = 'name: Vale\non: [pull_request]\n'
+const NOTES = 'ci.sh: save as .github/workflows/vale.yml\nci.sh: advisory - reports on the lines a pull request adds, and always passes\n'
 
 test('the pane previews, takes a choice, and hands the baseline to the prompt', async ($, on) => {
   const runs: string[][] = []
@@ -146,11 +195,18 @@ test('the pane previews, takes a choice, and hands the baseline to the prompt', 
 
     runs.push(argv)
     const isSurvey = (argv[1] ?? '').endsWith('survey.sh')
+    const isGenerator = (argv[1] ?? '').endsWith('ci.sh')
     const packages = argv.filter(one => one === '-p').length
-    const stdout = isSurvey ? SURVEY : packages > 1 ? COMPARED : SINGLE
+    const stdout = isGenerator ? WORKFLOW : isSurvey ? SURVEY : packages > 1 ? COMPARED : SINGLE
 
     return {
-      value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
+      value: {
+        exitCode: 0,
+        stdout,
+        stderr: isGenerator ? NOTES : '',
+        isStdoutTruncated: false,
+        isStderrTruncated: false,
+      },
     }
   })
 
@@ -176,20 +232,82 @@ test('the pane previews, takes a choice, and hands the baseline to the prompt', 
 
     await ui.press({ key: 'choice-Microsoft.Quotes' })
     expect((await ui.find({ key: 'choice-Microsoft.Quotes' }))?.props.label).toBe('warning')
-    expect(runs.at(-1)).toContain('Microsoft.Quotes=warning')
+    expect(runs.some(argv => argv.includes('Microsoft.Quotes=warning'))).toBe(true)
 
     // On GitHub with no pre-commit: the action starts ticked, the hook does not.
     expect((await ui.find({ key: 'check-githubAction' }))?.props.label).toBe('✓ GitHub Action')
     expect((await ui.find({ key: 'check-preCommit' }))?.props.label).toBe('· pre-commit hook')
+    // The generator's own words explain the choice, and its file is shown.
+    expect(await ui.find({ type: 'Text', text: /advisory - reports on the lines/ })).toBeDefined()
+    expect((await ui.find({ key: 'check-scope' }))?.props.label).toBe('New lines only')
+    await ui.press({ key: 'check-scope' })
+    expect((await ui.find({ key: 'check-scope' }))?.props.label).toBe('Changed files, whole')
+    expect(runs.at(-1)).toEqual(expect.arrayContaining(['action', '-s', 'changed-files']))
     await ui.press({ key: 'check-preCommit' })
 
     await ui.press({ key: 'apply' })
-    expect(filled).toContain('a GitHub Actions workflow (advisory;')
+    expect(filled).toContain('ci.sh action -s changed-files -f docs')
     expect(filled).toContain('a pre-commit hook')
     expect(filled).toContain('Microsoft.Quotes = warning (9 hits; was error)')
     expect(filled).toContain('Path: docs')
     await ui.unmount()
   }
+})
+
+const HAS_CONFIG = [
+  'Vale:          3.27.0 installed',
+  'Config:        .vale.ini ',
+  'Prose:',
+  '  docs                         3 .md',
+  'GitHub:        yes',
+  'Hook runner:   .pre-commit-config.yaml',
+].join('\n')
+
+test('a repository that already has Vale gets the checks pane alone', async ($, on) => {
+  const runs: string[][] = []
+  let filled = ''
+
+  on('ui.toast', () => ({ value: undefined }))
+  on('prompt.fill', (_, e) => {
+    filled = e.text
+
+    return { isFilled: true, text: e.text, cursor: e.text.length }
+  })
+  on('process.run', (_, e) => {
+    const argv = [...e.argv]
+
+    runs.push(argv)
+    const isGenerator = (argv[1] ?? '').endsWith('ci.sh')
+
+    return {
+      value: {
+        exitCode: 0,
+        stdout: isGenerator ? WORKFLOW : HAS_CONFIG,
+        stderr: isGenerator ? NOTES : '',
+        isStdoutTruncated: false,
+        isStderrTruncated: false,
+      },
+    }
+  })
+
+  const ui = await $.ui.mount({ ...PANE, requestId: 'vale-checks', props: { ...PANE.props, title: 'Vale checks' }, surface: 'desktop' })
+
+  await ui.press({ key: 'start-checks' })
+  expect(await ui.find({ type: 'Text', text: /Where Vale runs, for docs/ })).toBeDefined()
+  // On GitHub and already using pre-commit: both start ticked.
+  expect((await ui.find({ key: 'check-githubAction' }))?.props.label).toBe('✓ GitHub Action')
+  expect((await ui.find({ key: 'check-preCommit' }))?.props.label).toBe('✓ pre-commit hook')
+
+  await ui.press({ key: 'check-failOn' })
+  expect((await ui.find({ key: 'check-failOn' }))?.props.label).toBe('On errors')
+  await ui.press({ key: 'check-reviewComments' })
+  await ui.press({ key: 'apply-checks' })
+  expect(filled).toContain('Set up where Vale runs in this repository')
+  expect(filled).toContain('ci.sh action -x error -r -f docs')
+  expect(filled).toContain('ci.sh pre-commit -f docs')
+  // It never ran the baseline preview: this repository has one already.
+  expect(runs.some(argv => (argv[1] ?? '').endsWith('preview.sh'))).toBe(false)
+  await ui.unmount()
 })
 
 test('a repository that already has a config is told where to go instead', async ($, on) => {

@@ -5,20 +5,30 @@
 # repository is still a decision someone looks at first.
 #
 #   ci.sh detect
-#   ci.sh action [-b] [-r] [-f path]...
-#   ci.sh pre-commit [-f path] [-v version]
+#   ci.sh action [-s scope] [-l level] [-x fail] [-r] [-f path]...
+#   ci.sh pre-commit [-l level] [-P] [-f path] [-v version]
 #
 # detect      what is already there: a workflow that runs Vale, a pre-commit
 #             config and whether it has Vale in it, and whether this looks
 #             like a GitHub repository
 # action      a workflow for .github/workflows/vale.yml
-#   -b        blocking: fail the job on an error-level alert. Without it the
-#             job is advisory and always passes.
+#   -s scope  how much of a pull request is reported:
+#               new-lines      only the lines it adds (default)
+#               changed-files  every alert in a file it touches
+#               everything     every alert in the linted paths, each time
+#   -l level  the lowest severity reported: suggestion (default), warning,
+#             or error
+#   -x fail   when the job fails: never (default: advisory), error, or
+#             warning (which fails on errors too). -b is short for -x error.
 #   -r        post alerts as review comments, with one-click suggested fixes.
 #             Does not work on pull requests from forks.
 #   -f path   what to lint; repeat for several. Default: the repository root,
 #             which is rarely what you want.
-# pre-commit  the entry for .pre-commit-config.yaml
+# pre-commit  the entry for .pre-commit-config.yaml. A commit hook only ever
+#             sees the files being committed.
+#   -l level  the lowest severity that stops the commit: error (default),
+#             warning, or suggestion
+#   -P        run before a push rather than before each commit
 #   -f path   lint only files under this path
 #   -v ver    the Vale release to pin (default: the installed one)
 #
@@ -29,7 +39,7 @@
 set -u
 
 usage() {
-	echo 'usage: ci.sh detect | ci.sh action [-b] [-r] [-f path]... | ci.sh pre-commit [-f path] [-v version]' >&2
+	echo 'usage: ci.sh detect | ci.sh action [-s scope] [-l level] [-x fail] [-r] [-f path]... | ci.sh pre-commit [-l level] [-P] [-f path] [-v version]' >&2
 	exit 2
 }
 [ $# -gt 0 ] || usage
@@ -74,13 +84,18 @@ detect)
 	;;
 
 action)
-	blocking=0
+	failon=never
+	scope=new-lines
+	level=suggestion
 	review=0
 	paths=''
 	n=0
-	while getopts brf: opt; do
+	while getopts bs:l:x:rf: opt; do
 		case "$opt" in
-		b) blocking=1 ;;
+		b) failon=error ;;
+		s) scope=$OPTARG ;;
+		l) level=$OPTARG ;;
+		x) failon=$OPTARG ;;
 		r) review=1 ;;
 		f)
 			paths="$paths\"$OPTARG\", "
@@ -90,6 +105,11 @@ action)
 		*) usage ;;
 		esac
 	done
+	case "$scope" in new-lines | changed-files | everything) ;; *) echo "ci.sh: -s takes new-lines, changed-files or everything" >&2; exit 2 ;; esac
+	case "$level" in suggestion | warning | error) ;; *) echo "ci.sh: -l takes suggestion, warning or error" >&2; exit 2 ;; esac
+	case "$failon" in never | error | warning) ;; *) echo "ci.sh: -x takes never, error or warning" >&2; exit 2 ;; esac
+	blocking=0
+	[ "$failon" = never ] || blocking=1
 	echo 'name: Vale'
 	echo 'on: [pull_request]'
 	echo
@@ -109,7 +129,7 @@ action)
 		echo '        run: sudo apt-get install -y docutils'
 	fi
 	echo '      - uses: vale-cli/vale-action@v3'
-	if [ "$n" -gt 0 ] || [ "$blocking" -eq 1 ] || [ "$review" -eq 1 ]; then
+	if [ "$n" -gt 0 ] || [ "$blocking" -eq 1 ] || [ "$review" -eq 1 ] || [ "$scope" != new-lines ] || [ "$level" != suggestion ]; then
 		echo '        with:'
 	fi
 	if [ "$n" -eq 1 ]; then
@@ -117,14 +137,33 @@ action)
 	elif [ "$n" -gt 1 ]; then
 		echo "          files: '[${paths%, }]'"
 	fi
-	[ "$blocking" -eq 0 ] || echo '          fail_on_error: true'
+	# What is said, of what the pull request touches, and when it fails.
+	case "$scope" in
+	changed-files) echo '          filter_mode: file' ;;
+	everything) echo '          filter_mode: nofilter' ;;
+	esac
+	[ "$level" = suggestion ] || echo "          min_alert_level: $level"
+	case "$failon" in
+	error) echo '          fail_on_error: true' ;;
+	warning) echo '          fail_level: warning' ;;
+	esac
 	[ "$review" -eq 0 ] || echo '          reporter: github-pr-review'
 	{
 		echo "ci.sh: save as .github/workflows/vale.yml"
-		if [ "$blocking" -eq 1 ]; then
-			echo "ci.sh: blocking - fails on an error-level alert in the lines a pull request adds"
-		else
-			echo "ci.sh: advisory - reports on the lines a pull request adds, and always passes"
+		case "$scope" in
+		new-lines) where='the lines a pull request adds' ;;
+		changed-files) where='the files a pull request touches, whole' ;;
+		everything) where='everything it lints, on every pull request' ;;
+		esac
+		case "$failon" in
+		never) echo "ci.sh: advisory - reports on $where, and always passes" ;;
+		error) echo "ci.sh: blocking - fails on an error-level alert in $where" ;;
+		warning) echo "ci.sh: blocking - fails on a warning or an error in $where" ;;
+		esac
+		[ "$level" = suggestion ] || echo "ci.sh: reports $level level and above only"
+		[ "$scope" != everything ] || echo "ci.sh: 'everything' shows the whole backlog on every pull request; most teams want new-lines"
+		if [ "$failon" = warning ] && [ "$level" = error ]; then
+			echo "ci.sh: it fails on warnings but reports only errors; a failure would show nothing to fix"
 		fi
 		[ "$n" -gt 0 ] || echo "ci.sh: no -f given, so it lints the whole repository; name the docs path"
 		[ "$review" -eq 0 ] || echo "ci.sh: review comments need a token that can write, which a fork's pull request does not have"
@@ -134,13 +173,18 @@ action)
 pre-commit)
 	path=''
 	version=''
-	while getopts f:v: opt; do
+	level=error
+	prepush=0
+	while getopts f:v:l:P opt; do
 		case "$opt" in
+		l) level=$OPTARG ;;
+		P) prepush=1 ;;
 		f) path=${OPTARG%/} ;;
 		v) version=${OPTARG#v} ;;
 		*) usage ;;
 		esac
 	done
+	case "$level" in suggestion | warning | error) ;; *) echo "ci.sh: -l takes suggestion, warning or error" >&2; exit 2 ;; esac
 	if [ -z "$version" ]; then
 		version=$(vale --version 2>/dev/null | sed -n 's/^vale version //p')
 		[ -n "$version" ] || {
@@ -157,16 +201,27 @@ pre-commit)
 	echo '        name: vale sync'
 	echo '        pass_filenames: false'
 	echo '        args: [sync]'
+	[ "$prepush" -eq 0 ] || echo '        stages: [pre-push]'
 	echo '      - id: vale'
-	echo '        args: [--output=line, --minAlertLevel=error]'
+	echo "        args: [--output=line, --minAlertLevel=$level]"
 	[ -z "$path" ] || echo "        files: ^$path/"
+	[ "$prepush" -eq 0 ] || echo '        stages: [pre-push]'
 	{
+		install='pre-commit install'
+		[ "$prepush" -eq 0 ] || install='pre-commit install --hook-type pre-push'
 		if [ -f .pre-commit-config.yaml ]; then
 			echo "ci.sh: .pre-commit-config.yaml exists - add this entry under its 'repos:' list"
 		else
-			echo "ci.sh: save as .pre-commit-config.yaml, then each contributor runs 'pre-commit install' once"
+			echo "ci.sh: save as .pre-commit-config.yaml"
 		fi
-		echo "ci.sh: it stops a commit on error-level alerts only; warnings and suggestions stay out of the way"
+		echo "ci.sh: each contributor runs '$install' once"
+		when='a commit'
+		[ "$prepush" -eq 0 ] || when='a push'
+		if [ "$level" = error ]; then
+			echo "ci.sh: it stops $when on error-level alerts in the files being committed; warnings and suggestions stay out of the way"
+		else
+			echo "ci.sh: it shows $level level and above in the files being committed, and stops $when on errors"
+		fi
 	} >&2
 	;;
 
