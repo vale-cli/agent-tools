@@ -180,6 +180,15 @@ preview, so the numbers are always what you would get. Apply writes nothing
 itself — it puts the chosen baseline in the prompt for Claude to apply through
 the `onboard` skill. See [`plugins/vale-onboard`](plugins/vale-onboard).
 
+### Vale as tools
+
+`vale-tools` is a fourth plugin, also experimental. It gives Claude two tools
+it can call without a shell command: `lint`, which checks a draft or a file
+against the project's rules and returns each alert with the fix its rule
+carries, and `test`, which runs the test cases beside the project's own rules.
+Because `lint` takes text, Claude can check prose before writing it, including
+a commit message. See [`plugins/vale-tools`](plugins/vale-tools).
+
 ### The language server, as an alternative
 
 `vale-lsp` is a second, experimental plugin in this marketplace. It connects
