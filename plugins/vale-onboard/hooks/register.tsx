@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type {
+  Checks,
   Choice,
   Counts,
   Extras,
@@ -19,8 +20,9 @@ const FRONT_MATTER = 'text.frontmatter.id,text.frontmatter.slug'
 const MAX_RULES = 12
 const MAX_TERMS = 16
 
+const NO_CHECKS: Checks = { githubAction: false, preCommit: false, isBlocking: false }
+
 const NO_EXTRAS: Extras = {
-  blockingCi: false,
   codeComments: false,
   commitMessages: false,
   writtenGuide: false,
@@ -38,13 +40,16 @@ const EMPTY: Proposal = {
   rules: [],
   terms: [],
   skipsFrontMatter: true,
+  checks: NO_CHECKS,
+  isOnGitHub: false,
+  usesPreCommit: false,
   extras: NO_EXTRAS,
 }
 
 // Change the tag when Proposal's fields change: it declines what an earlier
 // version stored, which outlives a reload.
 const proposal = atom({ plugin: 'vale-onboard', key: 'proposal' } as const, EMPTY, {
-  shape: 'proposal-1',
+  shape: 'proposal-2',
 })
 
 type Parsed = {
@@ -151,7 +156,6 @@ export const previewArgs = (p: Proposal): string[] => {
 }
 
 const EXTRA_LABELS: Record<keyof Extras, string> = {
-  blockingCi: 'Blocking CI',
   codeComments: 'Code comments',
   commitMessages: 'Commit messages',
   writtenGuide: 'A written guide',
@@ -161,6 +165,17 @@ const describe = (rule: Rule): string =>
   rule.choice === 'off'
     ? `${rule.name} = NO (${rule.count} hits; switched off in the setup pane)`
     : `${rule.name} = ${rule.choice} (${rule.count} hits; was ${rule.level})`
+
+/** Where Vale will run by itself, as the instruction to Claude names it. */
+const runsIn = (p: Proposal): string => {
+  const mode = p.checks.isBlocking ? 'blocking' : 'advisory'
+  const places = [
+    ...(p.checks.githubAction ? [`a GitHub Actions workflow (${mode}; generate it with the ci skill's ci.sh action)`] : []),
+    ...(p.checks.preCommit ? ["a pre-commit hook (the ci skill's ci.sh pre-commit)"] : []),
+  ]
+
+  return places.length > 0 ? places.join(', and ') : 'nowhere automatic; do not add a workflow or a hook'
+}
 
 /** The instruction placed in the prompt: what was chosen, for Claude to apply. */
 export const applyText = (p: Proposal): string => {
@@ -189,6 +204,7 @@ export const applyText = (p: Proposal): string => {
     `Front matter id and slug: ${p.skipsFrontMatter ? 'leave unlinted' : 'lint them'}`,
     'Overrides, each with its reason as a comment:',
     ...(changed.length > 0 ? changed.map(rule => `  ${describe(rule)}`) : ['  none']),
+    `Where it runs: ${runsIn(p)}`,
     `Also set up: ${extras.length > 0 ? extras.join(', ') : 'nothing else'}`,
   ].join('\n')
 }
@@ -219,7 +235,9 @@ const preview = async ($: EngineInterface, args: string[]): Promise<Parsed | str
 }
 
 /** Finds where the prose is when the person did not say. */
-const survey = async ($: EngineInterface): Promise<{ path: string } | string> => {
+type Surveyed = { path: string; isOnGitHub: boolean; usesPreCommit: boolean }
+
+const survey = async ($: EngineInterface): Promise<Surveyed | string> => {
   try {
     const ran = await $.process.run(['sh', script($, 'survey.sh')], { timeoutMs: 60_000 })
     const lines = ran.stdout.split('\n')
@@ -249,7 +267,11 @@ const survey = async ($: EngineInterface): Promise<{ path: string } | string> =>
       return 'No prose files found here. Run /vale-onboard <path> with the directory your docs are in.'
     }
 
-    return { path: dir === '(root)' ? '.' : dir }
+    return {
+      path: dir === '(root)' ? '.' : dir,
+      isOnGitHub: lines.some(line => /^GitHub:\s+yes/.test(line)),
+      usesPreCommit: lines.some(line => /^Hook runner:.*\.pre-commit-config\.yaml/.test(line)),
+    }
   } catch {
     return 'Could not read the repository. The pane needs a POSIX shell (Git Bash on Windows).'
   }
@@ -323,23 +345,26 @@ const start = async ($: EngineInterface, asked: string) => {
     note: 'Reading the repository…',
   }))
 
-  let path = asked
+  const found = await survey($)
 
-  if (path === '') {
-    const found = await survey($)
+  // A path the person gave stands even where the survey found no prose of its
+  // own to suggest; any other failure of the survey is a reason to stop.
+  if (typeof found === 'string' && (asked === '' || !found.startsWith('No prose files'))) {
+    await fail($, found)
 
-    if (typeof found === 'string') {
-      await fail($, found)
-
-      return
-    }
-
-    path = found.path
+    return
   }
+
+  const seen = typeof found === 'string' ? { path: asked, isOnGitHub: false, usesPreCommit: false } : found
+  const path = asked === '' ? seen.path : asked
 
   await update($, proposal, p => ({
     ...p,
     path,
+    isOnGitHub: seen.isOnGitHub,
+    usesPreCommit: seen.usesPreCommit,
+    // Each check starts on only where the repository already works that way.
+    checks: { githubAction: seen.isOnGitHub, preCommit: seen.usesPreCommit, isBlocking: false },
     note: `Trying ${CANDIDATES.join(' and ')} against ${path}…`,
   }))
   const compared = await preview($, ['-t', ...CANDIDATES.flatMap(name => ['-p', name]), path])
@@ -525,6 +550,58 @@ export const register: Register = on => {
             </Box>
           </Box>
         )}
+
+        <Box marginTop={1} flexDirection="column">
+          <Text bold>Where it runs</Text>
+          <Text dimColor>
+            {p.isOnGitHub ? 'A GitHub repository' : 'Not a GitHub repository, as far as I can tell'}
+            {p.usesPreCommit ? ', and it already uses pre-commit.' : '; pre-commit is not in use here.'}
+          </Text>
+          <Box flexDirection="row" flexWrap="wrap" columnGap={1}>
+            <Button
+              key="check-githubAction"
+              label={`${p.checks.githubAction ? '✓' : '·'} GitHub Action`}
+              variant={p.checks.githubAction ? 'primary' : 'secondary'}
+              onPress={() =>
+                update($, proposal, now => ({
+                  ...now,
+                  checks: { ...now.checks, githubAction: !now.checks.githubAction },
+                }))
+              }
+            />
+            <Button
+              key="check-preCommit"
+              label={`${p.checks.preCommit ? '✓' : '·'} pre-commit hook`}
+              variant={p.checks.preCommit ? 'primary' : 'secondary'}
+              onPress={() =>
+                update($, proposal, now => ({
+                  ...now,
+                  checks: { ...now.checks, preCommit: !now.checks.preCommit },
+                }))
+              }
+            />
+            <Button
+              key="check-isBlocking"
+              label={`${p.checks.isBlocking ? '✓' : '·'} Block on errors`}
+              variant={p.checks.isBlocking ? 'primary' : 'secondary'}
+              onPress={() =>
+                update($, proposal, now => ({
+                  ...now,
+                  checks: { ...now.checks, isBlocking: !now.checks.isBlocking },
+                }))
+              }
+            />
+          </Box>
+          <Text dimColor>
+            {!p.checks.githubAction && !p.checks.preCommit
+              ? 'Nothing will run Vale automatically.'
+              : p.checks.isBlocking
+                ? p.now !== null && p.now.errors > 0
+                  ? `Blocking, with ${p.now.errors} errors left: the first run would fail.`
+                  : 'Blocking: an error-level alert stops the merge or the commit.'
+                : 'Advisory: it reports on new lines and never fails.'}
+          </Text>
+        </Box>
 
         <Box marginTop={1} flexDirection="column">
           <Text bold>Not included</Text>

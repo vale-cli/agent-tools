@@ -22,6 +22,10 @@ the quieter one, and shows:
   Capitalised words in the body start ticked; lowercase ones and anything in
   the first lines of a file do not, since those are usually typos, inconsistent
   casings or front matter.
+- **Where it runs** — a GitHub Action, a pre-commit hook, and whether they
+  block on errors. The action starts ticked in a GitHub repository and the hook
+  where pre-commit is already in use; the pane says which it found. Blocking
+  starts off, and warns if errors are left that would fail the first run.
 - **Not included** — other things Vale can do here, off until ticked.
 - **Apply** — puts the baseline you chose in the prompt. Press Enter and Claude
   applies it with the `onboard` skill from the main `vale` plugin, which should

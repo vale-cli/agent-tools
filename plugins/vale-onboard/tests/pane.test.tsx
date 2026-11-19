@@ -23,6 +23,9 @@ const SURVEY = [
   'Prose:',
   '  docs                         40 .md',
   'Translations:  none found',
+  'GitHub:        yes',
+  'CI:            none',
+  'Hook runner:   none',
 ].join('\n')
 
 const COMPARED = [
@@ -88,7 +91,10 @@ const CHOSEN: Proposal = {
     { word: 'VSCode', count: 4, where: 'docs/e.md:16', isAccepted: false },
   ],
   skipsFrontMatter: true,
-  extras: { blockingCi: false, codeComments: true, commitMessages: false, writtenGuide: false },
+  checks: { githubAction: true, preCommit: false, isBlocking: false },
+  isOnGitHub: true,
+  usesPreCommit: false,
+  extras: { codeComments: true, commitMessages: false, writtenGuide: false },
 }
 
 test('the preview is asked for exactly what was chosen', () => {
@@ -114,7 +120,12 @@ test('what goes to Claude names every choice and nothing that was left alone', (
   expect(text).toContain('left unticked (findings, not vocabulary): VSCode')
   expect(text).toContain('Microsoft.We = NO (47 hits')
   expect(text).toContain('Microsoft.Quotes = warning (9 hits; was error)')
+  expect(text).toContain('Where it runs: a GitHub Actions workflow (advisory;')
+  expect(text.includes('pre-commit hook')).toBe(false)
   expect(text).toContain('Also set up: Code comments')
+  expect(
+    applyText({ ...CHOSEN, checks: { githubAction: false, preCommit: false, isBlocking: false } }),
+  ).toContain('Where it runs: nowhere automatic')
   expect(text.includes('Microsoft.Passive')).toBe(false)
 })
 
@@ -154,6 +165,8 @@ test('the pane previews, takes a choice, and hands the baseline to the prompt', 
     expect(await ui.find({ type: 'Text', text: /Vale baseline for docs/ })).toBeDefined()
     // The survey chose the path, the comparison the quieter package.
     const compared = runs.find(argv => argv.filter(one => one === '-p').length === 2)
+    // The survey runs every time, so a check's default is never stale.
+    expect((runs[0]?.[1] ?? '').endsWith('survey.sh')).toBe(true)
 
     expect(compared?.slice(-5)).toEqual(['-p', 'Microsoft', '-p', 'Google', 'docs'])
     expect(await ui.find({ key: 'pkg-Microsoft' })).toBeDefined()
@@ -165,7 +178,14 @@ test('the pane previews, takes a choice, and hands the baseline to the prompt', 
     expect((await ui.find({ key: 'choice-Microsoft.Quotes' }))?.props.label).toBe('warning')
     expect(runs.at(-1)).toContain('Microsoft.Quotes=warning')
 
+    // On GitHub with no pre-commit: the action starts ticked, the hook does not.
+    expect((await ui.find({ key: 'check-githubAction' }))?.props.label).toBe('✓ GitHub Action')
+    expect((await ui.find({ key: 'check-preCommit' }))?.props.label).toBe('· pre-commit hook')
+    await ui.press({ key: 'check-preCommit' })
+
     await ui.press({ key: 'apply' })
+    expect(filled).toContain('a GitHub Actions workflow (advisory;')
+    expect(filled).toContain('a pre-commit hook')
     expect(filled).toContain('Microsoft.Quotes = warning (9 hits; was error)')
     expect(filled).toContain('Path: docs')
     await ui.unmount()

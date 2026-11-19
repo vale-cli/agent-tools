@@ -176,14 +176,16 @@ Style choices — from how the docs are written today; change any
 
 Other overrides: 1
   Microsoft.Quotes = warning     9 hits, right rule; not blocking yet
-CI:          update .github/workflows/main.yml — advisory, and only on lines
-             a pull request adds, so the backlog never lands on anyone.
-             Changes: action v1 → v3, trigger gains pull_request.
+Where it runs — change any
+  GitHub Action  update .github/workflows/main.yml — advisory, and only on
+                 lines a pull request adds, so the backlog lands on nobody.
+                 Changes: action v1 → v3, trigger gains pull_request.
+  pre-commit     add Vale to .pre-commit-config.yaml — errors only
 Still errors: 5 — the inconsistent spellings above. Real findings; I'd leave
               them for a follow-up fix.
 
 Not included — say the word for any of these
-  Blocking CI        5 errors would fail it today; fix those first
+  Blocking checks    5 errors would fail them today; fix those first
   One-click fixes    suggested changes on pull requests (not from forks)
   French docs        docs/fr (38 files) are skipped; needs a dictionary
   Code comments      212 .go, 40 .py files
@@ -223,6 +225,22 @@ keep rule names for lines with no plainer description. A "yes" accepts all of
 it; "use Google" or "keep We" changes one line and you re-preview. Do not
 start over, and do not re-ask what was already accepted.
 
+**Where it runs is part of the baseline, not an afterthought.** A config that
+only runs when someone remembers to type `vale` is not adopted. `ci`'s
+`scripts/ci.sh detect` says what the repository has; propose from that:
+
+- *A GitHub repository:* the action, on by default. Update a workflow that
+  already runs Vale; otherwise add `.github/workflows/vale.yml`.
+- *A repository that already uses pre-commit:* the Vale entry, on by default.
+- *No pre-commit here:* list it under "Not included" — "pre-commit hook:
+  stops a commit with errors; each contributor installs it once" — and do not
+  introduce it unasked.
+- *Not on GitHub:* say so, leave the action out, and offer the generic runner
+  command from `ci` under "Not included".
+
+Generate the files with `ci.sh action` and `ci.sh pre-commit` at the apply
+step; do not write the YAML from memory.
+
 Default CI to advisory. A job that is red on its first run teaches the team to
 ignore it.
 
@@ -239,7 +257,8 @@ with one fact, and switched off. The rules for that list:
   repository has fewer than ten commits to judge by.
 - No explanation and no recommendation. If they ask about one, explain then.
 - Never turn one on because it seems like a good idea. Each is a separate
-  yes, and each has its own skill: `ci` for blocking and suggested fixes,
+  yes, and each has its own skill: `ci` for blocking, suggested fixes and a
+  pre-commit hook,
   `setup` for translations and code comments, `vocab` for dictionaries,
   `commits`, `from-guide`, `write-guide`.
 - Leave a line out once it is done. A repository that already has a hook
@@ -259,8 +278,9 @@ That is a better proposal than a clean number.
 - the overrides, each with its reason (`triage`)
 - the style choices and any own rules, with
   `vale test --coverage styles/<Project>` passing (`tune`)
-- the CI change — update a job that already runs Vale rather than adding a
-  second, and say what you changed about its trigger (`ci`)
+- where it runs — the workflow and, if chosen, the pre-commit entry, from
+  `ci`'s `scripts/ci.sh`. Update a job that already runs Vale rather than
+  adding a second, and say what you changed about its trigger (`ci`)
 
 **6. Verify against the preview.** The same script, pointed at the real
 config, prints the same report:
@@ -321,6 +341,8 @@ re-propose; go to the apply step with exactly what it lists.
 - Accept only the words it lists. The ones it says were left unticked are
   findings: mention them at the end, do not add them.
 - Its "Expected after applying" counts are what step 6 should match.
+- "Where it runs" names the checks to add and whether they block. Add
+  exactly those with `ci`'s `scripts/ci.sh`; where it says nowhere, add none.
 - Anything under "Also set up" is a yes to that option; use its skill after
   the baseline is committed.
 

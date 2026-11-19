@@ -1,6 +1,7 @@
 ---
 name: ci
 description: Run Vale in GitHub Actions, a pre-commit hook, or another runner. Use when the user says "add vale to CI", "run vale on PRs", "add a pre-commit hook", or "make the build fail on style errors".
+allowed-tools: Bash(sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh *)
 ---
 
 # Put Vale in the pipeline
@@ -15,6 +16,42 @@ Vale runs locally and should now run automatically.
    not wire up CI for a config that does not resolve — the failure will look
    like a CI problem.
 2. The user has said whether the job should block. Ask if not.
+
+## Start from the script
+
+`scripts/ci.sh`, beside this file, sees what is already there and prints the
+files, so the YAML is not written from memory:
+
+```bash
+sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh detect
+sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh action -f docs            # advisory
+sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh action -b -f docs         # blocking
+sh ${CLAUDE_SKILL_DIR}/scripts/ci.sh pre-commit -f docs
+```
+
+`detect` reports whether this is a GitHub repository, any workflow that
+already runs Vale with its action version, mode and trigger, and whether
+pre-commit is in use and has Vale in it. `action` prints a workflow for
+`.github/workflows/vale.yml`; it adds the Asciidoctor or docutils step when
+the config lints those formats, `-b` makes it blocking, `-r` posts review
+comments with one-click fixes, and `-f` names what to lint. `pre-commit`
+prints a whole `.pre-commit-config.yaml`, or only the entry to add when one
+exists, pinned to the installed Vale.
+
+It prints and never writes. Read what it printed, say what will change, then
+save it. `${CLAUDE_SKILL_DIR}` is the directory this file is in; if it reaches
+you as literal text, use that path. The sections below explain what the
+output means and cover runners the script does not.
+
+Which to offer:
+
+- **A GitHub repository** — the action. It is the one that reaches every
+  contributor without anyone installing anything.
+- **A repository that already uses pre-commit** — the pre-commit entry too.
+  Do not introduce pre-commit to a team that does not use it just for this;
+  offer it, and say each contributor has to run `pre-commit install`.
+- **Both** is fine and common: pre-commit catches it before the push, the
+  action catches what skipped the hook.
 
 ## Advisory or blocking
 

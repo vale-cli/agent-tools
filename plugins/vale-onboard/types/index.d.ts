@@ -31,9 +31,18 @@ export type Term = {
 
 export type PackageCount = { name: string; counts: Counts }
 
+/** Where Vale runs by itself. Each starts ticked only where the repository already works that way. */
+export type Checks = {
+  /** A GitHub Actions workflow: on for a GitHub repository. */
+  githubAction: boolean
+  /** An entry in .pre-commit-config.yaml: on where pre-commit is already used. */
+  preCommit: boolean
+  /** Fail on errors, rather than report and pass. */
+  isBlocking: boolean
+}
+
 /** Things Vale could also do here. Named in the pane, off until ticked. */
 export type Extras = {
-  blockingCi: boolean
   codeComments: boolean
   commitMessages: boolean
   writtenGuide: boolean
@@ -53,6 +62,10 @@ export type Proposal = {
   terms: Term[]
   /** Leave front matter `id` and `slug` fields unlinted: they are URLs. */
   skipsFrontMatter: boolean
+  checks: Checks
+  /** What the survey found, so the pane can say why a check starts on or off. */
+  isOnGitHub: boolean
+  usesPreCommit: boolean
   extras: Extras
 }
 
