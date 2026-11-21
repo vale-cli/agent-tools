@@ -18,6 +18,8 @@ In the desktop app it also adds two rows to the right-click menu on selected
 text: **Check with Vale**, and, for a single word, **Add to Vale vocabulary**.
 Each puts a request in the prompt for you to send; neither acts by itself.
 
+![What the lint tool returns for one sentence: six alerts, each with its position, severity, rule and message, and for four of them the exact replacement to make.](../../.github/media/lint-tool.png)
+
 ## Why a tool and not a command
 
 - **A draft can be checked before it is written.** `lint` takes text, so Claude
