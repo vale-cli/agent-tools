@@ -53,7 +53,7 @@ packages change, and the project may have switched it off.
 **The prose is yours to write**, from those facts: grouping forty rules into
 five sections a person can hold in their head, and saying each in a sentence.
 
-## Workflow
+## Workflow: write
 
 **1. Take the inventory**, and read the vocabulary:
 `styles/config/vocabularies/<Project>/accept.txt` and `reject.txt`.
@@ -83,6 +83,8 @@ nothing.
 
    Use the comment syntax of the guide's format for the markers: `//` lines in
    AsciiDoc, `..` in reStructuredText, `#` in Org, `{/* */}` in MDX.
+
+## Workflow: check
 
 **3. Give examples that are true.** For the project's own rules, the test
 cases are the examples: an `input` that is flagged is the "don't", one with

@@ -59,7 +59,7 @@ about to write; do not write the YAML from memory.
 `example/`, beside this file, is a complete small case: a guide, the five
 rules derived from it, and their thirteen passing tests.
 
-## Workflow
+## Workflow: sort and write
 
 **1. Read and sort.** Every statement, in the guide's order, into a pile.
 
@@ -94,6 +94,8 @@ tests:
 - `message` says what to do, in the guide's own wording where it fits.
 - Start at `warning`, or `suggestion` for anything about length or
   frequency. Nothing new starts at `error`.
+
+## Workflow: test and enable
 
 **4. Take the tests from the guide.** A guide's "do" and "don't" examples are
 test cases already written by the people who own the rule: every "don't" must

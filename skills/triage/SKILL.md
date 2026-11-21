@@ -16,7 +16,7 @@ the user agrees to it. It does not edit prose — that is `fix`.
 1. `vale ls-config` resolves.
 2. You know which path represents the real corpus, not a subset.
 
-## Workflow
+## Workflow: sort the rules
 
 **1. Count by rule, not by file.**
 
@@ -46,8 +46,10 @@ A rule already at `suggestion` cannot be downgraded — it is at the lowest
 level. The choice there is keep or disable, and calling it a downgrade changes
 nothing.
 
-**4. Say what currently blocks.** Only `error` exits non-zero, so a pipeline
-can adopt Vale immediately with everything else advisory. That is usually the
+## Workflow: decide and write
+
+**4. Say what blocks.** Only `error` exits non-zero, so a
+pipeline can adopt Vale immediately with everything else advisory. That is usually the
 right first move and worth stating outright.
 
 **5. Show the plan and get a yes before touching the config.** Levels are the

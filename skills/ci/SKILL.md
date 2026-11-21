@@ -56,7 +56,9 @@ answered, and do not ask about flags by name.
 | When should it fail? | Never, only report · on errors · on warnings too | `-x never` · `error` · `warning` |
 | How should it show up? | Annotations on the check · review comments with one-click fixes | (none) · `-r` |
 
-What to say about each, when asked:
+## What to say about each choice
+
+When the user asks about a choice:
 
 - **Only added lines** is what lets a repository with a backlog adopt Vale:
   nobody is told about text they did not write. **Changed files** suits a
@@ -77,7 +79,7 @@ in `/vale-checks`, with the generated file shown as each one changes. If a
 message arrives beginning "Set up where Vale runs in this repository", those
 are the answers: run the commands it gives and do not ask again.
 
-Which to offer:
+## Which runner to offer
 
 - **A GitHub repository** — the action. It is the one that reaches every
   contributor without anyone installing anything.
@@ -130,6 +132,8 @@ To make it blocking, add `fail_on_error: true`: the job then fails on an
 Set `files:` every time. Its default is the repository root, which lints
 whatever the config's sections match, vendored trees included.
 
+## GitHub Actions: beyond the defaults
+
 **Suggested fixes.** With `reporter: github-pr-review`, alerts arrive as
 review comments, and one whose rule carries a fix is offered as a suggested
 change the reviewer can commit from the pull request. It is not the default
@@ -146,8 +150,9 @@ snippet. Not worth adding by default.
 AsciiDoc and reStructuredText need their parser installed in the job first
 (`asciidoctor`, `docutils`). If the config lints source code or another
 language, `files:` has to include those paths, and the job's `vale sync`
-fetches the grammars and models itself — they are not committed. Use a release tag for the action, not a branch
-name: a branch moves without notice. If the repository already has a Vale
+fetches the grammars and models itself — they are not committed.
+Use a release tag for the action, not a branch name: a branch moves without
+notice. If the repository already has a Vale
 job, update that one — an old `errata-ai/vale-action@v1` step is the same
 action under its previous name. Keep its `files:` path. "Only added lines"
 needs a pull request to compare against, so a job that runs only `on: push`

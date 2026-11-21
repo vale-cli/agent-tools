@@ -21,7 +21,7 @@ proper noun.
 2. The flagged terms really are the project's spelling. Check the docs or the
    product itself — the vocabulary becomes the reference everyone else follows.
 
-## Workflow
+## Workflow: collect the terms
 
 **1. Collect the terms Vale is actually flagging**, rather than guessing:
 
@@ -65,6 +65,8 @@ Read the result as you would any list of terms; an old word list collects
 typos someone silenced. Keep the old file until the team decides to retire the
 other spell checker — that is their call, not part of this.
 
+## Workflow: write the vocabulary
+
 **2. Create the vocabulary.** It lives inside `StylesPath` but is the one part
 of it that is yours and survives `vale sync`:
 
@@ -106,7 +108,7 @@ Any output means a `.gitignore` rule is covering it. Narrow that rule to
 
 ## Words that are the user's, not the project's
 
-Someone's own name, employer or handle gets flagged in every repository they
+Someone's own name, employer or username gets flagged in every repository they
 write in, and does not belong in each project's vocabulary. Those go in a
 user-level vocabulary instead. `vale ls-dirs` prints the two locations:
 
@@ -182,7 +184,7 @@ one docs set, unknown terms went from 11 to 84 on switching. Run step 1 of the
 workflow again and accept the real ones. Say this cost before switching, not
 after.
 
-### Another language
+## Dictionaries: another language
 
 For docs in French, German or any other language, the dictionary is what
 makes spell check work at all. Vale carries none, and skips files in a

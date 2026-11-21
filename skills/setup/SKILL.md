@@ -17,7 +17,7 @@ working config already exists, the user probably wants `fix` or
    reports rather than starting over, and say that is what you are doing.
 2. Know where the prose lives. Ask if it is not obvious.
 
-## Workflow
+## Workflow: install
 
 **1. Install** if `vale --version` fails. Do it rather than asking the user
 to, and say that you did:
@@ -62,6 +62,8 @@ everyone and CI run one version: `mise use vale@<version>`,
 or `conda install conda-forge::vale`. Other routes are at
 <https://docs.vale.sh/topics/installation.md>. A missing
 binary is not a reason to stop and hand the user a to-do.
+
+## Workflow: configure
 
 **2. Find the prose.** `docs/`, `content/`, `*.md` at the root. Do not point
 Vale at the whole repository. It does not skip `node_modules` on its own, and
@@ -108,6 +110,8 @@ lines in the middle matter once the config covers source code or another
 language: `vale sync` downloads tree-sitter grammars and language models into
 `config/`, megabytes each, and they are build output like the packages.
 
+## Workflow: first run
+
 **6. `vale sync`, then lint one file** to confirm the setup resolves. AsciiDoc
 needs `asciidoctor` on `PATH` and reStructuredText needs `rst2html`
 (`docutils`); without them Vale stops with an error naming the missing tool.
@@ -127,12 +131,10 @@ A large corpus commonly produces thousands of suggestions on day one. Say the
 number, and offer `triage`. Do not quietly raise `MinAlertLevel` to make
 it look smaller.
 
-## More than English prose
+## Docs in more than one language
 
-Two things a first config usually leaves out. Add either when the repository
-has it; both are a section each.
-
-### Docs in more than one language
+A first config usually leaves translations out. Add a section when the
+repository has them.
 
 Translated docs under `docs/fr/`, `i18n/de/`, `content/ja/` should not be read
 as English: every word fails spell check and the English style rules mean
@@ -162,7 +164,7 @@ the language, stops the files being read as English, and is silent — without
 it Vale warns about the missing dictionary on every run. Remove the line once
 a dictionary is installed.
 
-### Comments in source code
+## Comments in source code
 
 Vale reads the comments in Go, Python, JavaScript, TypeScript, Java, Rust and
 about twenty other languages, using a tree-sitter grammar per language so a

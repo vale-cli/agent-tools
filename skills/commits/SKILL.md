@@ -23,7 +23,7 @@ the history's closest convention; it is added only when the user says so.
 2. `vale ls-config` resolves. If there is no config yet, this skill can write
    one that holds only the commit section; say that is what you are doing.
 
-## Workflow
+## Workflow: choose and configure
 
 **1. Read the history before choosing.** `scripts/history.sh`, beside this
 file, lints the last fifty commits against each convention in a temp
@@ -84,6 +84,8 @@ Check a rule's name and its parameters in `styles/<Convention>/` after
 ```bash
 git log -1 --format=%B | vale --path=COMMIT_EDITMSG
 ```
+
+## Workflow: install and enforce
 
 **4. Install the hook, in the form the repository already uses.**
 

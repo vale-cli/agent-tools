@@ -1,2 +1,5 @@
 .DS_Store
 *.swp
+
+# Synced by `vale sync`.
+.github/styles/Prompts

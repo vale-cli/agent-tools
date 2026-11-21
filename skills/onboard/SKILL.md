@@ -44,7 +44,7 @@ drafting is a handful of decisions, not a study. Do not read every file or
 every alert before proposing. If something would take long — a huge corpus, a
 package that will not sync — say so and propose on a sample.
 
-## Workflow: look and preview
+## Workflow: look
 
 **1. Look.** No questions yet. `scripts/survey.sh` reads the repository in a
 fraction of a second and prints what there is to work with: where the prose
@@ -71,7 +71,9 @@ It reports facts, not decisions. Then:
   English: that is hundreds of false alerts. The quiet default is a section
   that names the language and leaves spell check off —
   `[docs/fr/**/*.md]` with `Lang = fr`, `BasedOnStyles = Vale` and
-  `Vale.Spelling = NO`. Checking them properly is an option, below.
+  `Vale.Spelling = NO`. Spell-checking them needs a dictionary, an option below.
+## Workflow: what is already there
+
 - Note what is already there: a CI workflow, a pre-commit config, a written
   style guide, and leftovers from an older Vale setup such as a script that
   downloads styles by hand. Leftovers go in the report, not in the bin.
@@ -84,6 +86,8 @@ It reports facts, not decisions. Then:
 - Pick the project's name, used for the vocabulary and any own rules: the
   product or repository name in one capitalised word. Not `Vale`, and not a
   package's name; where that leaves nothing, `Docs`.
+
+## Workflow: preview
 
 **2. Preview the candidates.** `scripts/preview.sh` builds a throwaway config
 in a temp directory. It needs only `vale` and writes nothing to the
@@ -107,8 +111,7 @@ rules alone, since the style packages are written for English prose.
 
 ## Workflow: draft
 
-**3. Draft the baseline, still in temp files.** Five things, each a minute or
-two at most.
+**3. Draft the baseline, still in temp files.** Five things, a minute or two each.
 
 - *Front matter.* Look at where the unknown terms are. Hits on the first lines
   of files are front matter — `id: vscode`, a `slug` — and those are URLs, not
@@ -126,6 +129,8 @@ two at most.
   Vale does not already know. Then put the remaining real terms from the
   preview in the same scratch `accept.txt`. Leave out anything that looks like a typo or an
   inconsistent casing — those are findings.
+## Workflow: decide the rules
+
 - *Overrides.* Every error-level rule needs a decision before CI can block on
   anything; the preview's examples show one real hit of each. Use the `triage`
   buckets, in a scratch file, with the reason as a comment above each line.
@@ -199,6 +204,8 @@ The reasons in the config are what I observed, for you to replace with yours.
 Apply this as a pull request? Or tell me what to change.
 ```
 
+## Proposal: what to say
+
 Lead with two or three things it actually caught, picked from the preview's
 examples — a real inconsistency in a named file convinces where a count does
 not. Choose findings the team would agree are mistakes, not the busiest rule.
@@ -210,13 +217,12 @@ lint is not the obvious one, give it a `Path:` line with the reason.
 
 A style-choice line earns its place with a decision or with evidence. Where
 you are leaving a rule as shipped and have nothing to say about it, leave the
-line out. Counts measured in different ways can differ by one or two (a term
-rule and spell check do not flag exactly the same words); report each as
-measured.
+line out. Counts measured in different ways can differ by one or two;
+report each as measured.
 
 Use only evidence the preview gave you: rule counts, examples, term
-locations. Do not go counting headings or grepping for the right spelling to
-decorate a line; a hit count is enough to justify a default.
+locations. A hit count is enough to justify a
+default.
 
 Every editorial choice is in there with the default you picked: the package,
 the style choices in plain words, each remaining override, whether CI blocks.
@@ -224,6 +230,8 @@ Name choices the way the team would — "title case", not `capitalization` — a
 keep rule names for lines with no plainer description. A "yes" accepts all of
 it; "use Google" or "keep We" changes one line and you re-preview. Do not
 start over, and do not re-ask what was already accepted.
+
+## Proposal: where it runs
 
 **Where it runs is part of the baseline, not an afterthought.** A config that
 only runs when someone remembers to type `vale` is not adopted. `ci`'s
@@ -243,6 +251,8 @@ step; do not write the YAML from memory.
 
 Default CI to advisory. A job that is red on its first run teaches the team to
 ignore it.
+
+## Proposal: quiet by default
 
 **Quiet by default, complete by mention.** The baseline you propose is the
 smallest one that is useful: English prose, one package, advisory CI. Every
@@ -298,8 +308,10 @@ reporting. Then the exit code, which is what CI sees:
 vale --output=line <path> >/dev/null; echo "exit $?"
 ```
 
-Exit 1 is expected while errors remain, and is not a failure of the setup.
+Exit 1 is expected while errors remain.
 Exit 0 means a blocking job would pass today.
+
+## Workflow: commit
 
 **7. Commit, and open it as a pull request where the team reviews that way.**
 The config, ignore rules, vocabulary, own rules and CI change go in one
@@ -325,8 +337,8 @@ message for them to paste.
 **8. Close with the result and one next step.** The table from the proposal,
 what was committed, the exit code, any leftovers you noticed, and the single
 most useful thing to do next — usually "fix the 5 remaining errors, then CI
-can block". Not a menu: the options were in the proposal, and repeating them
-here is noise. If they picked one — the editor, say — do it or point to it
+can block". Not a menu: the options were in the
+proposal. If they picked one — the editor, say — do it or point to it
 now (<https://docs.vale.sh/guides/lsp.md> for the language server).
 
 ## If the proposal comes from the setup pane
