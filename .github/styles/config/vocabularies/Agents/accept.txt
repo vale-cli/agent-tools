@@ -1,0 +1,12 @@
+Asciidoctor
+codespell
+commitizen
+commitlint
+docutils
+gitlint
+gitmoji
+pacman
+textlint
+unlinted
+unticked
+winget

@@ -139,7 +139,7 @@ rules alone, since the style packages are written for English prose.
 - *Style choices and preferred terms.* The table in `tune` names the choices
   teams argue about. Take what the docs already do as the default, read from
   the rule's count: few hits means the docs follow the rule, many means they
-  do not. An inconsistent spelling in the unknown-terms list ("VSCode" beside
+  do not. An inconsistent spelling in the unknown-terms list (`VSCode` beside
   "VS Code") is a pair for `tune`'s `Terms.yml` template, in a scratch style
   directory. If a heading rule is flagging product names, accept the names;
   do not switch the rule off.

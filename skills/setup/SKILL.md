@@ -181,7 +181,7 @@ Vale.Spelling = warning
 
 - Start with `Vale` alone. The prose style packages are written for
   documentation and are noisy on comments. The `Comments` package covers
-  comment conventions — owned TODOs, commented-out code, doc-comment form.
+  comment conventions — owned `TODO` comments, commented-out code, doc-comment form.
 - Expect identifiers. On one 280-file Go codebase the first run was 567
   spelling alerts in under two seconds, nearly all names: `ctx`, `argv`,
   tool names. That is why spelling starts at `warning` here. Real names go in

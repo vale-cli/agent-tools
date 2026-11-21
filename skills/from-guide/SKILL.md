@@ -31,7 +31,7 @@ guides are about a third each of the first three.
 |---|---|---|
 | **Already covered** | "Use sentence case." "Avoid passive voice." | A package rule exists. Set its level — see `tune`. No new rule. |
 | **A rule** | "Write 'sign in', not 'log in'." "Sentences under 30 words." | Write it, with tests. |
-| **Vocabulary** | "Our product is Zentrix, capital Z." | `accept.txt` or `reject.txt` — see `vocab`. |
+| **Vocabulary** | "Our product is Acme, capital A." | `accept.txt` or `reject.txt` — see `vocab`. |
 | **Not checkable** | "Be warm." "Write for a busy reader." "Lead with the outcome." | List it in the report as not enforced. Do not approximate it. |
 
 The fourth pile is not a failure. A rule that pretends to check tone fires on

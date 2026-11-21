@@ -1,6 +1,6 @@
 ---
 name: tune
-description: Change one of a project's style choices in plain words — heading capitalization, contractions, "we", passive voice, the Oxford comma, company vocabulary and preferred terms — and write it into the Vale config with its reason. Use when the user says "use title case headings", "allow contractions", "stop flagging we", "it should be VS Code not VSCode", "ban the old product name", or "make this rule block".
+description: Change one of a project's style choices in plain words — heading capitalization, contractions, "we", passive voice, the Oxford comma, company vocabulary and preferred terms — and write it into the Vale config with its reason. Use when the user says "use title case headings", "allow contractions", "stop flagging we", "always write sign in, not log in", "ban the old product name", or "make this rule block".
 ---
 
 # Tune a project's style choices
@@ -63,7 +63,7 @@ test cases already in it:
 |---|---|---|
 | Title-case headings (Chicago or AP) | `house/HeadingsTitle.yml` | `<Package>.Headings = NO` |
 | Avoid contractions | `house/NoContractions.yml` | `<Package>.Contractions = NO` |
-| Preferred terms ("VS Code, not VSCode") | `house/Terms.yml` | — |
+| Preferred terms ("VS Code, not `VSCode`") | `house/Terms.yml` | — |
 | One regional spelling (British, Australian, …) | `house/SpellingRegional.yml` | `Vale.Spelling = NO`, and the dictionary — see `vocab` |
 
 To use one:
